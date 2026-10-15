@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1c1e24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Koloběžníkovy služby</title>
+  <link rel="manifest" href="manifest.json">
   <style>
     :root {
       --bg: #121316;
@@ -384,10 +388,8 @@
 
           <label for="record-type">Typ služby</label>
           <select id="record-type" onchange="handleTypeSelectChange(this)" required>
-            <!-- Vygenerováno dynamicky ve skriptu -->
           </select>
 
-          <!-- Rychlé pole pro zadání vlastního typu -->
           <div id="custom-type-container" style="display:none; margin-bottom:14px;">
             <label for="custom-type-input" style="color:var(--primary);">Název nového typu služby</label>
             <div style="display:flex; gap:8px;">
@@ -504,7 +506,6 @@
   </nav>
 
   <script>
-    // --- STAV A ÚLOŽIŠTĚ ---
     let viewDate = new Date();
     const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
@@ -544,7 +545,6 @@
       renderCurrentView();
     }
 
-    // --- SPRÁVA TYPŮ SLUŽEB ---
     function getAllTypes() {
       const custom = getStorageData("ks_custom_types", []);
       return [...DEFAULT_TYPES, ...custom];
@@ -635,7 +635,6 @@
       container.innerHTML = html;
     }
 
-    // --- HLAVNÍ VYKRESLENÍ ---
     function renderCurrentView() {
       const monthKey = getMonthKey(viewDate);
       const monthNames = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
@@ -1088,6 +1087,15 @@
         if (tabId === "tab-settings" && buttons[4]) buttons[4].classList.add("active");
       }
       window.scrollTo(0, 0);
+    }
+
+    // Registrace Service Workeru pro PWA a offline provoz
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js")
+          .then((reg) => console.log("SW registrován:", reg.scope))
+          .catch((err) => console.log("SW chyba:", err));
+      });
     }
 
     // Inicializace
