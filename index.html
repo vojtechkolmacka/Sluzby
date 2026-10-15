@@ -16,6 +16,7 @@
       --success: #2ecc71;
       --danger: #e74c3c;
       --nav-bg: #16181e;
+      --accent: #3498db;
     }
 
     * {
@@ -28,14 +29,14 @@
     body {
       background-color: var(--bg);
       color: var(--text);
-      padding-bottom: 80px;
+      padding-bottom: 90px;
       min-height: 100vh;
     }
 
     header {
       background-color: var(--card-bg);
       border-bottom: 1px solid var(--card-border);
-      padding: 16px;
+      padding: 14px 16px;
       text-align: center;
       position: sticky;
       top: 0;
@@ -43,117 +44,237 @@
     }
 
     header h1 {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--primary);
       letter-spacing: 0.5px;
     }
 
     main {
-      padding: 16px;
-      max-width: 600px;
+      padding: 14px;
+      max-width: 650px;
       margin: 0 auto;
     }
 
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
 
     .card-title {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 10px;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
     .stat-number {
-      font-size: 2.2rem;
+      font-size: 1.7rem;
       font-weight: 800;
       color: var(--text);
-      margin: 6px 0;
+      margin: 4px 0;
     }
 
     .stat-subtext {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
+    }
+
+    .progress-bar-bg {
+      background: #2a2d36;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-bar-fill {
+      background: var(--primary);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
     }
 
     label {
       display: block;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
       margin-bottom: 6px;
       font-weight: 500;
     }
 
-    input, select, textarea {
+    input, select {
       width: 100%;
-      padding: 14px;
+      padding: 13px;
       background-color: #0f1013;
       border: 1px solid var(--card-border);
       border-radius: 8px;
       color: var(--text);
-      font-size: 1.05rem;
-      margin-bottom: 16px;
+      font-size: 1rem;
+      margin-bottom: 14px;
       outline: none;
     }
 
-    input:focus, select:focus, textarea:focus {
+    input:focus, select:focus {
       border-color: var(--primary);
     }
 
     .btn {
       width: 100%;
-      padding: 16px;
+      padding: 15px;
       background-color: var(--primary);
       color: #000;
       border: none;
       border-radius: 8px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 8px;
-      transition: background-color 0.15s;
     }
 
-    .btn:active {
-      background-color: var(--primary-hover);
-      transform: scale(0.99);
+    .btn:active { background-color: var(--primary-hover); }
+
+    .btn-secondary {
+      background: #2a2d36;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      margin-top: 8px;
     }
 
+    /* Kalendář a rozpad dnů */
+    .month-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px 14px;
+    }
+
+    .month-selector button {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+
+    .month-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .day-row {
+      background: #16181e;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .day-row.is-sunday { opacity: 0.55; }
+    .day-row.is-off { opacity: 0.45; border-left: 3px solid var(--danger); }
+    .day-row.has-sales { border-left: 3px solid var(--primary); }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+
+    .day-name {
+      font-weight: 700;
+    }
+
+    .day-amount {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 1.05rem;
+    }
+
+    .day-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .day-tag {
+      background: #242731;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #cbd2df;
+    }
+
+    .day-details {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--card-border);
+      display: none;
+    }
+
+    .day-details.open { display: block; }
+
+    .rec-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 0.85rem;
+    }
+
+    .rec-del-btn {
+      color: var(--danger);
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* Toast */
     .toast {
       position: fixed;
-      top: 70px;
+      top: 65px;
       left: 50%;
       transform: translateX(-50%);
       background-color: var(--success);
       color: #000;
       font-weight: 700;
-      padding: 12px 24px;
+      padding: 10px 20px;
       border-radius: 30px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       z-index: 100;
       display: none;
     }
 
-    /* Spodní lišta */
+    /* Spodní navigace */
     nav {
       position: fixed;
       bottom: 0;
@@ -178,7 +299,6 @@
       gap: 4px;
       cursor: pointer;
       flex: 1;
-      padding: 6px 0;
     }
 
     .nav-item.active {
@@ -186,38 +306,7 @@
       font-weight: 700;
     }
 
-    .nav-icon {
-      font-size: 1.25rem;
-    }
-
-    /* Seznam záznamů */
-    .record-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--card-border);
-    }
-
-    .record-item:last-child {
-      border-bottom: none;
-    }
-
-    .record-type {
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .record-date {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .record-amount {
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: var(--primary);
-    }
+    .nav-icon { font-size: 1.2rem; }
   </style>
 </head>
 <body>
@@ -226,33 +315,62 @@
     <h1>Koloběžníkovy služby</h1>
   </header>
 
-  <div id="toast" class="toast">Služba byla uložena!</div>
+  <div id="toast" class="toast">Uloženo!</div>
 
   <main>
-    <!-- 1. ZÁLOŽKA: PŘEHLED -->
+    <!-- 1. PŘEHLED -->
     <section id="tab-overview" class="tab-content active">
-      <div class="card">
-        <div class="card-title">Dnes prodáno</div>
-        <div class="stat-number" id="today-total">0 Kč</div>
-        <div class="stat-subtext" id="today-count">0 služeb</div>
+      <div class="month-selector">
+        <button onclick="changeMonth(-1)">◀</button>
+        <div class="month-title" id="current-period-title">Načítám...</div>
+        <button onclick="changeMonth(1)">▶</button>
       </div>
 
+      <!-- Karta cíle a tempa -->
       <div class="card">
-        <div class="card-title">Tento měsíc</div>
-        <div class="stat-number" id="month-total">0 Kč</div>
-        <div class="stat-subtext" id="month-count">0 služeb</div>
+        <div class="card-title">
+          <span>Měsíční cíl</span>
+          <span id="target-percent" style="color: var(--primary);">0 %</span>
+        </div>
+        <div class="stat-number" id="target-sold">0 Kč</div>
+        <div class="progress-bar-bg">
+          <div id="target-progress-fill" class="progress-bar-fill"></div>
+        </div>
+        <div class="stat-subtext" style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span id="target-total-display">Cíl: nenastaven</span>
+          <span id="target-remaining">Zbývá: 0 Kč</span>
+        </div>
+
+        <div style="margin-top:14px; padding-top:10px; border-top:1px solid var(--card-border);">
+          <div style="font-size:0.85rem; color:var(--text-muted);">Potřebný denní průměr pro splnění:</div>
+          <div style="font-size:1.3rem; font-weight:800; color:var(--accent); margin:4px 0;" id="needed-daily-rate">0 Kč / den</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);" id="remaining-workdays-info">
+            Počítá se s pracovními dny (So = 0.5, Ne = volno, svátky vyloučeny).
+          </div>
+        </div>
       </div>
 
-      <button class="btn" onclick="switchTab('tab-record')">
-        + Zapsat novou službu
-      </button>
+      <!-- Dnešní prodej -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Dnes prodáno</div>
+          <div class="stat-number" id="today-total" style="font-size:1.4rem;">0 Kč</div>
+          <div class="stat-subtext" id="today-count">0 služeb</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Aktivní dny</div>
+          <div class="stat-number" id="active-days-count" style="font-size:1.4rem;">0</div>
+          <div class="stat-subtext" id="active-days-avg">Průměr: 0 Kč/den</div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="switchTab('tab-record')">+ Zapsat novou službu</button>
     </section>
 
-    <!-- 2. ZÁLOŽKA: ZAPSAT -->
+    <!-- 2. ZAPSAT -->
     <section id="tab-record" class="tab-content">
       <div class="card">
         <div class="card-title">Nový záznam</div>
-        
         <form id="service-form" onsubmit="saveRecord(event)">
           <label for="record-date">Datum</label>
           <input type="date" id="record-date" required>
@@ -272,43 +390,57 @@
           <input type="number" id="record-amount" placeholder="např. 499" min="1" step="1" required inputmode="numeric">
 
           <label for="record-note">Poznámka (volitelné)</label>
-          <input type="text" id="record-note" placeholder="např. číslo účtenky nebo model">
+          <input type="text" id="record-note" placeholder="např. číslo účtenky nebo popis">
 
           <button type="submit" id="submit-btn" class="btn">Uložit službu</button>
         </form>
       </div>
     </section>
 
-    <!-- 3. ZÁLOŽKA: HISTORIE -->
+    <!-- 3. DENNÍ ROZPIS (HISTORIE MĚSÍCE) -->
     <section id="tab-history" class="tab-content">
-      <div class="card">
-        <div class="card-title">Poslední zapsané služby</div>
-        <div id="recent-list">
-          <p style="color: var(--text-muted); text-align: center; padding: 20px 0;">Zatím žádné záznamy.</p>
-        </div>
+      <div class="month-selector">
+        <button onclick="changeMonth(-1)">◀</button>
+        <div class="month-title" id="history-period-title">Načítám...</div>
+        <button onclick="changeMonth(1)">▶</button>
+      </div>
+
+      <div class="card" style="padding:10px 14px; margin-bottom:12px; font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+        <span>Kliknutím na den rozbalíš jeho záznamy nebo nastavíš svátek / volno.</span>
+      </div>
+
+      <div id="days-container">
+        <!-- Zde se dynamicky vykreslí všechny dny měsíce -->
       </div>
     </section>
 
-    <!-- 4. ZÁLOŽKA: STATISTIKY -->
+    <!-- 4. STATISTIKY -->
     <section id="tab-stats" class="tab-content">
       <div class="card">
-        <div class="card-title">Statistiky</div>
-        <p style="color: var(--text-muted);">Sekce statistik bude rozšířena v dalších krocích.</p>
+        <div class="card-title">Rozpad služeb v měsíci</div>
+        <div id="stats-by-type">Načítám...</div>
       </div>
     </section>
 
-    <!-- 5. ZÁLOŽKA: NASTAVENÍ -->
+    <!-- 5. NASTAVENÍ -->
     <section id="tab-settings" class="tab-content">
       <div class="card">
-        <div class="card-title">Nastavení a správa</div>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">
-          Data jsou bezpečně uložena v tomto prohlížeči v IndexedDB.
+        <div class="card-title">Měsíční cíl pro aktuální měsíc</div>
+        <label for="target-input">Cílová částka v Kč</label>
+        <input type="number" id="target-input" placeholder="např. 50000" min="0" step="1000" inputmode="numeric">
+        <button class="btn" onclick="saveMonthlyTarget()">Uložit cíl měsíce</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">O aplikaci</div>
+        <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">
+          <strong>Koloběžníkovy služby</strong><br>
+          Počítadlo pracovního tempa bere: Pondělí až Pátek jako 1 den, Sobotu jako 0,5 dne, Neděle vynechává a zohledňuje označené svátky. Data jsou v bezpečí IndexedDB v tomto telefonu.
         </p>
       </div>
     </section>
   </main>
 
-  <!-- SPODNÍ NAVIGACE -->
   <nav>
     <button class="nav-item active" onclick="switchTab('tab-overview', this)">
       <span class="nav-icon">📊</span>
@@ -319,8 +451,8 @@
       <span>Zapsat</span>
     </button>
     <button class="nav-item" onclick="switchTab('tab-history', this)">
-      <span class="nav-icon">📋</span>
-      <span>Historie</span>
+      <span class="nav-icon">📅</span>
+      <span>Dny v měsíci</span>
     </button>
     <button class="nav-item" onclick="switchTab('tab-stats', this)">
       <span class="nav-icon">📈</span>
@@ -328,206 +460,161 @@
     </button>
     <button class="nav-item" onclick="switchTab('tab-settings', this)">
       <span class="nav-icon">⚙️</span>
-      <span>Nastavení</span>
+      <span>Cíle</span>
     </button>
   </nav>
 
   <script>
-    // --- DATABÁZE (IndexedDB) ---
+    // --- STAV A DATABÁZE ---
     let db;
     const DB_NAME = "KolobeznikSluzbyDB";
-    const DB_VERSION = 1;
+    const DB_VERSION = 2; // Povýšeno pro podporu cílů a svátků
+
+    let viewDate = new Date(); // Rok a měsíc, který si právě prohlížíme
+    const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
     function initDB() {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onupgradeneeded = (e) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
         db = e.target.result;
         if (!db.objectStoreNames.contains("records")) {
           const store = db.createObjectStore("records", { keyPath: "id" });
           store.createIndex("date", "date", { unique: false });
-          store.createIndex("type", "type", { unique: false });
+        }
+        if (!db.objectStoreNames.contains("monthly_targets")) {
+          db.createObjectStore("monthly_targets", { keyPath: "monthKey" }); // YYYY-MM
+        }
+        if (!db.objectStoreNames.contains("holidays")) {
+          db.createObjectStore("holidays", { keyPath: "date" }); // YYYY-MM-DD
         }
       };
 
-      request.onsuccess = (e) => {
+      req.onsuccess = (e) => {
         db = e.target.result;
-        loadDashboardData();
-        loadRecentHistory();
-      };
-
-      request.onerror = (e) => {
-        console.error("Chyba při otevírání IndexedDB:", e.target.error);
+        renderCurrentView();
       };
     }
 
-    // --- FORMULÁŘ A UKLÁDÁNÍ ---
+    function getMonthKey(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      return `${year}-${month}`;
+    }
+
+    function changeMonth(delta) {
+      viewDate.setMonth(viewDate.getMonth() + delta);
+      renderCurrentView();
+    }
+
     // Nastavení dnešního data do formuláře
     document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
 
-    let isSubmitting = false;
+    // --- HLAVNÍ VYKRESLENÍ ---
+    function renderCurrentView() {
+      const monthKey = getMonthKey(viewDate);
+      const monthNames = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
+      const titleStr = `${monthNames[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
 
-    function saveRecord(e) {
-      e.preventDefault();
-      if (isSubmitting) return; // Ochrana proti vícenásobnému kliknutí
-      isSubmitting = true;
+      document.getElementById("current-period-title").textContent = titleStr;
+      document.getElementById("history-period-title").textContent = titleStr;
 
-      const submitBtn = document.getElementById("submit-btn");
-      submitBtn.disabled = true;
+      // Načtení záznamů, cílů a svátků
+      const tx = db.transaction(["records", "monthly_targets", "holidays"], "readonly");
+      const recStore = tx.objectStore("records");
+      const targetStore = tx.objectStore("monthly_targets");
+      const holidayStore = tx.objectStore("holidays");
 
-      const date = document.getElementById("record-date").value;
-      const type = document.getElementById("record-type").value;
-      const amount = parseInt(document.getElementById("record-amount").value, 10);
-      const note = document.getElementById("record-note").value.trim();
-
-      if (!date || isNaN(amount) || amount <= 0) {
-        alert("Prosím zadej platné datum a kladnou částku.");
-        isSubmitting = false;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      const record = {
-        id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-        date: date,
-        type: type,
-        amount: amount,
-        note: note,
-        createdAt: new Date().toISOString()
-      };
-
-      const tx = db.transaction(["records"], "readwrite");
-      const store = tx.objectStore("records");
-      store.add(record);
+      const recReq = recStore.getAll();
+      const targetReq = targetStore.get(monthKey);
+      const holidayReq = holidayStore.getAll();
 
       tx.oncomplete = () => {
-        // Zobraz toast potvrzení
-        showToast("Služba uložena: " + amount.toLocaleString("cs-CZ") + " Kč");
+        const allRecords = recReq.result || [];
+        const targetData = targetReq.result;
+        const holidays = new Set((holidayReq.result || []).map(h => h.date));
 
-        // Reset částky a poznámky (typ a datum ponecháme pro rychlé zadání další služby)
-        document.getElementById("record-amount").value = "";
-        document.getElementById("record-note").value = "";
+        const monthRecords = allRecords.filter(r => r.date.startsWith(monthKey));
 
-        // Obnov data v přehledu a historii
-        loadDashboardData();
-        loadRecentHistory();
-
-        isSubmitting = false;
-        submitBtn.disabled = false;
-      };
-
-      tx.onerror = (err) => {
-        alert("Chyba při ukládání: " + err.target.error);
-        isSubmitting = false;
-        submitBtn.disabled = false;
+        renderOverview(monthRecords, targetData, holidays);
+        renderDaysList(monthKey, monthRecords, holidays);
+        renderStats(monthRecords);
       };
     }
 
-    function showToast(msg) {
-      const toast = document.getElementById("toast");
-      toast.textContent = msg;
-      toast.style.display = "block";
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 2500);
-    }
+    // --- PŘEHLED, CÍL A VÝPOČET PRACOVNÍCH DNŮ ---
+    function renderOverview(monthRecords, targetData, holidays) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const isCurrentMonth = getMonthKey(new Date()) === getMonthKey(viewDate);
 
-    // --- NAČÍTÁNÍ PŘEHLEDŮ ---
-    function loadDashboardData() {
-      if (!db) return;
-      const tx = db.transaction(["records"], "readonly");
-      const store = tx.objectStore("records");
-      const req = store.getAll();
-
-      req.onsuccess = () => {
-        const records = req.result;
-        const todayStr = new Date().toISOString().split("T")[0];
-        const currentYearMonth = todayStr.substring(0, 7); // RRRR-MM
-
-        let todaySum = 0;
-        let todayCount = 0;
-        let monthSum = 0;
-        let monthCount = 0;
-
-        records.forEach(r => {
-          if (r.date === todayStr) {
-            todaySum += r.amount;
-            todayCount++;
-          }
-          if (r.date.startsWith(currentYearMonth)) {
-            monthSum += r.amount;
-            monthCount++;
-          }
-        });
-
-        document.getElementById("today-total").textContent = todaySum.toLocaleString("cs-CZ") + " Kč";
-        document.getElementById("today-count").textContent = todayCount + (todayCount === 1 ? " služba" : (todayCount >= 2 && todayCount <= 4 ? " služby" : " služeb"));
-
-        document.getElementById("month-total").textContent = monthSum.toLocaleString("cs-CZ") + " Kč";
-        document.getElementById("month-count").textContent = monthCount + (monthCount === 1 ? " služba" : (monthCount >= 2 && monthCount <= 4 ? " služby" : " služeb"));
-      };
-    }
-
-    function loadRecentHistory() {
-      if (!db) return;
-      const tx = db.transaction(["records"], "readonly");
-      const store = tx.objectStore("records");
-      const req = store.getAll();
-
-      req.onsuccess = () => {
-        const records = req.result;
-        const container = document.getElementById("recent-list");
-
-        if (records.length === 0) {
-          container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px 0;">Zatím žádné záznamy.</p>';
-          return;
+      // 1. Dnešní prodej
+      let todaySum = 0;
+      let todayCount = 0;
+      monthRecords.forEach(r => {
+        if (r.date === todayStr) {
+          todaySum += r.amount;
+          todayCount++;
         }
+      });
+      document.getElementById("today-total").textContent = todaySum.toLocaleString("cs-CZ") + " Kč";
+      document.getElementById("today-count").textContent = todayCount + " služeb";
 
-        // Seřazení od nejnovějšího
-        records.sort((a, b) => new Date(b.date) - new Date(a.date) || b.createdAt.localeCompare(a.createdAt));
+      // 2. Měsíční součet a aktivní dny
+      const daysWithSales = new Set(monthRecords.map(r => r.date));
+      const totalMonthSum = monthRecords.reduce((acc, r) => acc + r.amount, 0);
+      const activeCount = daysWithSales.size;
+      const avgPerActiveDay = activeCount > 0 ? Math.round(totalMonthSum / activeCount) : 0;
 
-        let html = "";
-        records.slice(0, 20).forEach(r => {
-          const formattedDate = r.date.split("-").reverse().join(". ");
-          html += `
-            <div class="record-item">
-              <div>
-                <div class="record-type">${escapeHtml(r.type)}</div>
-                <div class="record-date">${formattedDate} ${r.note ? "• " + escapeHtml(r.note) : ""}</div>
-              </div>
-              <div class="record-amount">${r.amount.toLocaleString("cs-CZ")} Kč</div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      };
-    }
+      document.getElementById("active-days-count").textContent = activeCount;
+      document.getElementById("active-days-avg").textContent = "Průměr: " + avgPerActiveDay.toLocaleString("cs-CZ") + " Kč/den";
 
-    function escapeHtml(str) {
-      if (!str) return "";
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
+      // 3. Cíl a výpočet tempa
+      const target = targetData ? targetData.amount : 0;
+      document.getElementById("target-sold").textContent = totalMonthSum.toLocaleString("cs-CZ") + " Kč";
+      document.getElementById("target-input").value = target > 0 ? target : "";
 
-    // --- PŘEPÍNÁNÍ ZÁLOŽEK ---
-    function switchTab(tabId, navBtn) {
-      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      document.getElementById(tabId).classList.add("active");
+      if (target > 0) {
+        const remaining = Math.max(0, target - totalMonthSum);
+        const pct = Math.min(100, Math.round((totalMonthSum / target) * 100));
+        const realPct = Math.round((totalMonthSum / target) * 100);
 
-      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
-      if (navBtn) {
-        navBtn.classList.add("active");
+        document.getElementById("target-total-display").textContent = "Cíl: " + target.toLocaleString("cs-CZ") + " Kč";
+        document.getElementById("target-remaining").textContent = "Zbývá: " + remaining.toLocaleString("cs-CZ") + " Kč";
+        document.getElementById("target-percent").textContent = realPct + " %";
+        document.getElementById("target-progress-fill").style.width = pct + "%";
+
+        // Výpočet zbývajících pracovních dnů od zítřka (nebo ode dneška) do konce měsíce
+        const remWorkdays = calculateRemainingWorkdays(viewDate, holidays, isCurrentMonth);
+
+        if (remaining <= 0) {
+          document.getElementById("needed-daily-rate").textContent = "CÍL SPLNĚN! 🎉";
+          document.getElementById("remaining-workdays-info").textContent = "Měsíční cíl je již překročen.";
+        } else if (remWorkdays > 0) {
+          const neededPerDay = Math.round(remaining / remWorkdays);
+          document.getElementById("needed-daily-rate").textContent = neededPerDay.toLocaleString("cs-CZ") + " Kč / den";
+          document.getElementById("remaining-workdays-info").textContent = `Zbývá ${remWorkdays.toFixed(1)} pracovních dní (Po–Pá = 1, So = 0.5, Ne/svátky = 0).`;
+        } else {
+          document.getElementById("needed-daily-rate").textContent = remaining.toLocaleString("cs-CZ") + " Kč";
+          document.getElementById("remaining-workdays-info").textContent = "Žádné zbývající pracovní dny v tomto měsíci.";
+        }
       } else {
-        // Pokud přepínáme programově (tlačítkem z přehledu)
-        const buttons = document.querySelectorAll(".nav-item");
-        if (tabId === "tab-record") buttons[1].classList.add("active");
-        if (tabId === "tab-overview") buttons[0].classList.add("active");
+        document.getElementById("target-total-display").textContent = "Cíl: nenastaven";
+        document.getElementById("target-remaining").textContent = "Zbývá: –";
+        document.getElementById("target-percent").textContent = "– %";
+        document.getElementById("target-progress-fill").style.width = "0%";
+        document.getElementById("needed-daily-rate").textContent = "Nastav cíl v Nastavení";
+        document.getElementById("remaining-workdays-info").textContent = "Po zadání cíle zde uvidíš potřebný denní průměr.";
       }
-
-      window.scrollTo(0, 0);
     }
 
-    // Spuštění po načtení stránky
-    window.onload = initDB;
-  </script>
-</body>
-</html>
+    // Váhy dnů: Po-Pá = 1.0, So = 0.5, Ne = 0.0, Svátek/Volno = 0.0
+    function calculateRemainingWorkdays(d, holidays, isCurrentMonth) {
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const startDay = isCurrentMonth ? new Date().getDate() : 1;
+
+      let workdays = 0;
+      for (let day = startDay; day <= lastDay; day++) {
+        const curDate = new Date(year, month, day);
+        const dayOfWeek = curDate.getDay(); // 0 = Ne, 6 = So
+        const curDateSt
