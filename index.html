@@ -180,7 +180,7 @@
     .btn-install {
       background: linear-gradient(135deg, #ffaa00, #ff8800);
       color: #000;
-      padding: 14px;
+      padding: 15px;
       font-size: 1rem;
       font-weight: 800;
       border-radius: 8px;
@@ -188,7 +188,8 @@
       width: 100%;
       cursor: pointer;
       margin-bottom: 12px;
-      display: none; /* Zobrazí se automaticky, když je instalace připravena */
+      display: block; /* Trvale viditelné */
+      text-align: center;
     }
 
     .month-selector {
@@ -449,15 +450,15 @@
 
     <!-- 5. NASTAVENÍ A PWA -->
     <section id="tab-settings" class="tab-content">
-      <!-- Přímé instalační tlačítko pro mobil -->
+      <!-- Trvale viditelné instalační tlačítko -->
       <div class="card">
-        <div class="card-title">Instalace do mobilu</div>
+        <div class="card-title">Aplikace pro mobil</div>
         <button type="button" id="pwa-install-btn" class="btn-install" onclick="triggerPwaInstall()">
-          📲 Nainstalovat na plochu telefonu
+          📲 Přidat / Nainstalovat na plochu mobilu
         </button>
-        <p id="pwa-hint" style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">
-          Aplikaci můžeš také přidat přes menu prohlížeče Chrome (tři tečky vpravo nahoře → <strong>Přidat na plochu</strong> nebo <strong>Nainstalovat aplikaci</strong>).
-        </p>
+        <div id="install-instruction" style="background:#0f1013; padding:10px; border-radius:8px; font-size:0.8rem; color:var(--text-muted); line-height:1.4; display:none; margin-top:8px;">
+          Pokud se neotevřelo potvrzení instalace, klepni v Chrome vpravo nahoře na <strong>tři tečky</strong> a zvol <strong>„Přidat na plochu“</strong> nebo <strong>„Nainstalovat aplikaci“</strong>.
+        </div>
       </div>
 
       <div class="card">
@@ -1120,22 +1121,22 @@
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      const installBtn = document.getElementById("pwa-install-btn");
-      if (installBtn) {
-        installBtn.style.display = "block";
-      }
     });
 
     function triggerPwaInstall() {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === "accepted") {
-          showToast("Aplikace byla nainstalována!");
-        }
-        deferredPrompt = null;
-        document.getElementById("pwa-install-btn").style.display = "none";
-      });
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === "accepted") {
+            showToast("Aplikace byla úspěšně přidána!");
+          }
+          deferredPrompt = null;
+        });
+      } else {
+        // Pokud prohlížeč zrovna nepředal prompt, zobrazíme nápovědu
+        const inst = document.getElementById("install-instruction");
+        if (inst) inst.style.display = "block";
+      }
     }
 
     if ("serviceWorker" in navigator) {
