@@ -1,15 +1,23 @@
 {
+  "id": "cz.kolobeznik.sluzby",
   "name": "Koloběžníkovy služby",
   "short_name": "Služby",
-  "start_url": "index.html",
+  "description": "Osobní evidence prodaných služeb Datart",
+  "lang": "cs",
+  "dir": "ltr",
+  "start_url": "https://vojtechkolmacka.github.io/Sluzby/",
+  "scope": "https://vojtechkolmacka.github.io/Sluzby/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#121316",
   "theme_color": "#1c1e24",
+  "categories": ["business", "finance", "productivity"],
   "icons": [
     {
       "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
