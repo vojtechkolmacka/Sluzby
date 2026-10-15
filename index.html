@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Koloběžníkovy služby</title>
+  <style>
+    :root {
+      --bg: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --text: #f0f2f5;
+      --text-muted: #8b92a0;
+      --primary: #ffaa00;
+      --primary-hover: #e09600;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --nav-bg: #16181e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 80px;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    main {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .stat-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      margin: 6px 0;
+    }
+
+    .stat-subtext {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 14px;
+      background-color: #0f1013;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1.05rem;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      background-color: var(--primary);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.15s;
+    }
+
+    .btn:active {
+      background-color: var(--primary-hover);
+      transform: scale(0.99);
+    }
+
+    .toast {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--success);
+      color: #000;
+      font-weight: 700;
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      z-index: 100;
+      display: none;
+    }
+
+    /* Spodní lišta */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--nav-bg);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 50;
+    }
+
+    .nav-item {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      flex: 1;
+      padding: 6px 0;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .nav-icon {
+      font-size: 1.25rem;
+    }
+
+    /* Seznam záznamů */
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .record-item:last-child {
+      border-bottom: none;
+    }
+
+    .record-type {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .record-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .record-amount {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Koloběžníkovy služby</h1>
+  </header>
+
+  <div id="toast" class="toast">Služba byla uložena!</div>
+
+  <main>
+    <!-- 1. ZÁLOŽKA: PŘEHLED -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="card">
+        <div class="card-title">Dnes prodáno</div>
+        <div class="stat-number" id="today-total">0 Kč</div>
+        <div class="stat-subtext" id="today-count">0 služeb</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tento měsíc</div>
+        <div class="stat-number" id="month-total">0 Kč</div>
+        <div class="stat-subtext" id="month-count">0 služeb</div>
+      </div>
+
+      <button class="btn" onclick="switchTab('tab-record')">
+        + Zapsat novou službu
+      </button>
+    </section>
+
+    <!-- 2. ZÁLOŽKA: ZAPSAT -->
+    <section id="tab-record" class="tab-content">
+      <div class="card">
+        <div class="card-title">Nový záznam</div>
+        
+        <form id="service-form" onsubmit="saveRecord(event)">
+          <label for="record-date">Datum</label>
+          <input type="date" id="record-date" required>
+
+          <label for="record-type">Typ služby</label>
+          <select id="record-type" required>
+            <option value="Bleskovka">1. Bleskovka</option>
+            <option value="Delší záruka">2. Delší záruka</option>
+            <option value="Nahodilé poškození">3. Nahodilé poškození</option>
+            <option value="Doprava">4. Doprava</option>
+            <option value="Instalace">5. Instalace</option>
+            <option value="Instalace TV na stěnu">6. Instalace TV na stěnu</option>
+            <option value="Instalace počítače">7. Instalace počítače</option>
+          </select>
+
+          <label for="record-amount">Částka v Kč</label>
+          <input type="number" id="record-amount" placeholder="např. 499" min="1" step="1" required inputmode="numeric">
+
+          <label for="record-note">Poznámka (volitelné)</label>
+          <input type="text" id="record-note" placeholder="např. číslo účtenky nebo model">
+
+          <button type="submit" id="submit-btn" class="btn">Uložit službu</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 3. ZÁLOŽKA: HISTORIE -->
+    <section id="tab-history" class="tab-content">
+      <div class="card">
+        <div class="card-title">Poslední zapsané služby</div>
+        <div id="recent-list">
+          <p style="color: var(--text-muted); text-align: center; padding: 20px 0;">Zatím žádné záznamy.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ZÁLOŽKA: STATISTIKY -->
+    <section id="tab-stats" class="tab-content">
+      <div class="card">
+        <div class="card-title">Statistiky</div>
+        <p style="color: var(--text-muted);">Sekce statistik bude rozšířena v dalších krocích.</p>
+      </div>
+    </section>
+
+    <!-- 5. ZÁLOŽKA: NASTAVENÍ -->
+    <section id="tab-settings" class="tab-content">
+      <div class="card">
+        <div class="card-title">Nastavení a správa</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">
+          Data jsou bezpečně uložena v tomto prohlížeči v IndexedDB.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- SPODNÍ NAVIGACE -->
+  <nav>
+    <button class="nav-item active" onclick="switchTab('tab-overview', this)">
+      <span class="nav-icon">📊</span>
+      <span>Přehled</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tab-record', this)">
+      <span class="nav-icon">➕</span>
+      <span>Zapsat</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tab-history', this)">
+      <span class="nav-icon">📋</span>
+      <span>Historie</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tab-stats', this)">
+      <span class="nav-icon">📈</span>
+      <span>Statistiky</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('tab-settings', this)">
+      <span class="nav-icon">⚙️</span>
+      <span>Nastavení</span>
+    </button>
+  </nav>
+
+  <script>
+    // --- DATABÁZE (IndexedDB) ---
+    let db;
+    const DB_NAME = "KolobeznikSluzbyDB";
+    const DB_VERSION = 1;
+
+    function initDB() {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if (!db.objectStoreNames.contains("records")) {
+          const store = db.createObjectStore("records", { keyPath: "id" });
+          store.createIndex("date", "date", { unique: false });
+          store.createIndex("type", "type", { unique: false });
+        }
+      };
+
+      request.onsuccess = (e) => {
+        db = e.target.result;
+        loadDashboardData();
+        loadRecentHistory();
+      };
+
+      request.onerror = (e) => {
+        console.error("Chyba při otevírání IndexedDB:", e.target.error);
+      };
+    }
+
+    // --- FORMULÁŘ A UKLÁDÁNÍ ---
+    // Nastavení dnešního data do formuláře
+    document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
+
+    let isSubmitting = false;
+
+    function saveRecord(e) {
+      e.preventDefault();
+      if (isSubmitting) return; // Ochrana proti vícenásobnému kliknutí
+      isSubmitting = true;
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+
+      const date = document.getElementById("record-date").value;
+      const type = document.getElementById("record-type").value;
+      const amount = parseInt(document.getElementById("record-amount").value, 10);
+      const note = document.getElementById("record-note").value.trim();
+
+      if (!date || isNaN(amount) || amount <= 0) {
+        alert("Prosím zadej platné datum a kladnou částku.");
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const record = {
+        id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+        date: date,
+        type: type,
+        amount: amount,
+        note: note,
+        createdAt: new Date().toISOString()
+      };
+
+      const tx = db.transaction(["records"], "readwrite");
+      const store = tx.objectStore("records");
+      store.add(record);
+
+      tx.oncomplete = () => {
+        // Zobraz toast potvrzení
+        showToast("Služba uložena: " + amount.toLocaleString("cs-CZ") + " Kč");
+
+        // Reset částky a poznámky (typ a datum ponecháme pro rychlé zadání další služby)
+        document.getElementById("record-amount").value = "";
+        document.getElementById("record-note").value = "";
+
+        // Obnov data v přehledu a historii
+        loadDashboardData();
+        loadRecentHistory();
+
+        isSubmitting = false;
+        submitBtn.disabled = false;
+      };
+
+      tx.onerror = (err) => {
+        alert("Chyba při ukládání: " + err.target.error);
+        isSubmitting = false;
+        submitBtn.disabled = false;
+      };
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 2500);
+    }
+
+    // --- NAČÍTÁNÍ PŘEHLEDŮ ---
+    function loadDashboardData() {
+      if (!db) return;
+      const tx = db.transaction(["records"], "readonly");
+      const store = tx.objectStore("records");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const records = req.result;
+        const todayStr = new Date().toISOString().split("T")[0];
+        const currentYearMonth = todayStr.substring(0, 7); // RRRR-MM
+
+        let todaySum = 0;
+        let todayCount = 0;
+        let monthSum = 0;
+        let monthCount = 0;
+
+        records.forEach(r => {
+          if (r.date === todayStr) {
+            todaySum += r.amount;
+            todayCount++;
+          }
+          if (r.date.startsWith(currentYearMonth)) {
+            monthSum += r.amount;
+            monthCount++;
+          }
+        });
+
+        document.getElementById("today-total").textContent = todaySum.toLocaleString("cs-CZ") + " Kč";
+        document.getElementById("today-count").textContent = todayCount + (todayCount === 1 ? " služba" : (todayCount >= 2 && todayCount <= 4 ? " služby" : " služeb"));
+
+        document.getElementById("month-total").textContent = monthSum.toLocaleString("cs-CZ") + " Kč";
+        document.getElementById("month-count").textContent = monthCount + (monthCount === 1 ? " služba" : (monthCount >= 2 && monthCount <= 4 ? " služby" : " služeb"));
+      };
+    }
+
+    function loadRecentHistory() {
+      if (!db) return;
+      const tx = db.transaction(["records"], "readonly");
+      const store = tx.objectStore("records");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const records = req.result;
+        const container = document.getElementById("recent-list");
+
+        if (records.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px 0;">Zatím žádné záznamy.</p>';
+          return;
+        }
+
+        // Seřazení od nejnovějšího
+        records.sort((a, b) => new Date(b.date) - new Date(a.date) || b.createdAt.localeCompare(a.createdAt));
+
+        let html = "";
+        records.slice(0, 20).forEach(r => {
+          const formattedDate = r.date.split("-").reverse().join(". ");
+          html += `
+            <div class="record-item">
+              <div>
+                <div class="record-type">${escapeHtml(r.type)}</div>
+                <div class="record-date">${formattedDate} ${r.note ? "• " + escapeHtml(r.note) : ""}</div>
+              </div>
+              <div class="record-amount">${r.amount.toLocaleString("cs-CZ")} Kč</div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      };
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // --- PŘEPÍNÁNÍ ZÁLOŽEK ---
+    function switchTab(tabId, navBtn) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      if (navBtn) {
+        navBtn.classList.add("active");
+      } else {
+        // Pokud přepínáme programově (tlačítkem z přehledu)
+        const buttons = document.querySelectorAll(".nav-item");
+        if (tabId === "tab-record") buttons[1].classList.add("active");
+        if (tabId === "tab-overview") buttons[0].classList.add("active");
+      }
+
+      window.scrollTo(0, 0);
+    }
+
+    // Spuštění po načtení stránky
+    window.onload = initDB;
+  </script>
+</body>
+</html>
