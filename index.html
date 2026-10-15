@@ -172,8 +172,6 @@
       font-weight: 600;
     }
 
-    .btn-secondary:active { background: #353a47; }
-
     .month-selector {
       display: flex;
       align-items: center;
@@ -385,15 +383,18 @@
           <input type="date" id="record-date" required>
 
           <label for="record-type">Typ služby</label>
-          <select id="record-type" required>
-            <option value="Bleskovka">1. Bleskovka</option>
-            <option value="Delší záruka">2. Delší záruka</option>
-            <option value="Nahodilé poškození">3. Nahodilé poškození</option>
-            <option value="Doprava">4. Doprava</option>
-            <option value="Instalace">5. Instalace</option>
-            <option value="Instalace TV na stěnu">6. Instalace TV na stěnu</option>
-            <option value="Instalace počítače">7. Instalace počítače</option>
+          <select id="record-type" onchange="handleTypeSelectChange(this)" required>
+            <!-- Vygenerováno dynamicky ve skriptu -->
           </select>
+
+          <!-- Rychlé pole pro zadání vlastního typu -->
+          <div id="custom-type-container" style="display:none; margin-bottom:14px;">
+            <label for="custom-type-input" style="color:var(--primary);">Název nového typu služby</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="custom-type-input" placeholder="např. Fólie na mobil" style="margin-bottom:0;">
+              <button type="button" class="btn" style="width:auto; padding:0 18px;" onclick="addCustomType()">Přidat</button>
+            </div>
+          </div>
 
           <label for="record-amount">Částka v Kč</label>
           <input type="number" id="record-amount" placeholder="např. 499" min="1" step="1" required inputmode="numeric">
@@ -429,13 +430,18 @@
       </div>
     </section>
 
-    <!-- 5. NASTAVENÍ, CÍLE A ZÁLOHOVÁNÍ -->
+    <!-- 5. NASTAVENÍ, CÍLE, KATEGORIE A ZÁLOHY -->
     <section id="tab-settings" class="tab-content">
       <div class="card">
         <div class="card-title">Měsíční cíl</div>
         <label for="target-input">Cílová částka v Kč pro vybraný měsíc</label>
         <input type="number" id="target-input" placeholder="např. 50000" min="0" step="1000" inputmode="numeric">
         <button type="button" class="btn" onclick="saveMonthlyTarget()">Uložit cíl měsíce</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Správa vlastních typů služeb</div>
+        <div id="custom-types-list" style="margin-bottom:10px;"></div>
       </div>
 
       <div class="card">
@@ -493,7 +499,7 @@
     </button>
     <button type="button" class="nav-item" onclick="switchTab('tab-settings', this)">
       <span class="nav-icon">⚙️</span>
-      <span>Cíle & Záloha</span>
+      <span>Nastavení</span>
     </button>
   </nav>
 
@@ -501,6 +507,16 @@
     // --- STAV A ÚLOŽIŠTĚ ---
     let viewDate = new Date();
     const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+
+    const DEFAULT_TYPES = [
+      "Bleskovka",
+      "Delší záruka",
+      "Nahodilé poškození",
+      "Doprava",
+      "Instalace",
+      "Instalace TV na stěnu",
+      "Instalace počítače"
+    ];
 
     function getStorageData(key, fallback) {
       try {
@@ -528,6 +544,98 @@
       renderCurrentView();
     }
 
+    // --- SPRÁVA TYPŮ SLUŽEB ---
+    function getAllTypes() {
+      const custom = getStorageData("ks_custom_types", []);
+      return [...DEFAULT_TYPES, ...custom];
+    }
+
+    function updateTypeDropdown(selectedVal) {
+      const select = document.getElementById("record-type");
+      const allTypes = getAllTypes();
+      
+      let html = "";
+      allTypes.forEach((t, i) => {
+        html += `<option value="${escapeHtml(t)}">${i + 1}. ${escapeHtml(t)}</option>`;
+      });
+      html += `<option value="__custom__" style="color:var(--primary); font-weight:bold;">+ Vlastní typ služby...</option>`;
+
+      select.innerHTML = html;
+
+      if (selectedVal && allTypes.includes(selectedVal)) {
+        select.value = selectedVal;
+      }
+    }
+
+    function handleTypeSelectChange(selectEl) {
+      const container = document.getElementById("custom-type-container");
+      if (selectEl.value === "__custom__") {
+        container.style.display = "block";
+        document.getElementById("custom-type-input").focus();
+      } else {
+        container.style.display = "none";
+      }
+    }
+
+    function addCustomType() {
+      const input = document.getElementById("custom-type-input");
+      const val = input.value.trim();
+      if (!val) {
+        alert("Zadej název nové služby.");
+        return;
+      }
+
+      let custom = getStorageData("ks_custom_types", []);
+      if (DEFAULT_TYPES.includes(val) || custom.includes(val)) {
+        alert("Tento typ služby již existuje.");
+        return;
+      }
+
+      custom.push(val);
+      setStorageData("ks_custom_types", custom);
+
+      input.value = "";
+      document.getElementById("custom-type-container").style.display = "none";
+
+      updateTypeDropdown(val);
+      renderCustomTypesList();
+      showToast(`Typ „${val}“ byl přidán`);
+    }
+
+    function deleteCustomType(typeToDelete) {
+      if (!confirm(`Chceš odebrat typ „${typeToDelete}“ z nabídky? (Existující záznamy s touto službou zůstanou v historii zachovány).`)) return;
+
+      let custom = getStorageData("ks_custom_types", []);
+      custom = custom.filter(t => t !== typeToDelete);
+      setStorageData("ks_custom_types", custom);
+
+      updateTypeDropdown();
+      renderCustomTypesList();
+      showToast("Typ služby byl odebrán");
+    }
+
+    function renderCustomTypesList() {
+      const container = document.getElementById("custom-types-list");
+      const custom = getStorageData("ks_custom_types", []);
+
+      if (custom.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Žádné vlastní typy nebyly vytvořeny.</p>';
+        return;
+      }
+
+      let html = "";
+      custom.forEach(t => {
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #20232b; font-size:0.9rem;">
+            <span>${escapeHtml(t)}</span>
+            <button type="button" class="rec-del-btn" style="font-size:0.9rem;" onclick="deleteCustomType('${escapeHtml(t)}')">✕ Odebrat</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // --- HLAVNÍ VYKRESLENÍ ---
     function renderCurrentView() {
       const monthKey = getMonthKey(viewDate);
       const monthNames = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
@@ -547,6 +655,7 @@
       renderOverview(monthRecords, targetAmount, holidays);
       renderDaysList(monthKey, monthRecords, holidays);
       renderStats(monthRecords);
+      renderCustomTypesList();
     }
 
     function renderOverview(monthRecords, target, holidays) {
@@ -603,7 +712,7 @@
         document.getElementById("target-remaining").textContent = "Zbývá: –";
         document.getElementById("target-percent").textContent = "– %";
         document.getElementById("target-progress-fill").style.width = "0%";
-        document.getElementById("needed-daily-rate").textContent = "Nastav v záložce Cíle & Záloha";
+        document.getElementById("needed-daily-rate").textContent = "Nastav v záložce Nastavení";
         document.getElementById("remaining-workdays-info").textContent = "Zadej cílovou částku a uvidíš potřebný denní průměr.";
       }
     }
@@ -623,11 +732,11 @@
         if (holidays.has(curDateStr)) continue;
 
         if (dayOfWeek === 0) {
-          continue; // Neděle
+          continue;
         } else if (dayOfWeek === 6) {
-          workdays += 0.5; // Sobota
+          workdays += 0.5;
         } else {
-          workdays += 1.0; // Pondělí - Pátek
+          workdays += 1.0;
         }
       }
       return workdays;
@@ -756,6 +865,11 @@
       const amount = parseInt(document.getElementById("record-amount").value, 10);
       const note = document.getElementById("record-note").value.trim();
 
+      if (type === "__custom__") {
+        alert("Prosím nejprve zadej a přidej název nového typu služby.");
+        return;
+      }
+
       if (!date || isNaN(amount) || amount <= 0) {
         alert("Zadej platné datum a kladnou částku!");
         return;
@@ -814,15 +928,15 @@
       switchTab("tab-overview");
     }
 
-    // --- EXPORT A IMPORT ZÁLOH (NOVINKA) ---
     function exportBackupJSON() {
       const backupData = {
-        version: "1.0",
+        version: "1.1",
         appName: "KolobeznikovySluzby",
         exportedAt: new Date().toISOString(),
         records: getStorageData("ks_records", []),
         targets: getStorageData("ks_targets", {}),
-        holidays: getStorageData("ks_holidays", [])
+        holidays: getStorageData("ks_holidays", []),
+        customTypes: getStorageData("ks_custom_types", [])
       };
 
       const jsonStr = JSON.stringify(backupData, null, 2);
@@ -846,10 +960,8 @@
         return;
       }
 
-      // Seřazení podle data
       records.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      // UTF-8 BOM pro správnou češtinu v Excelu
       let csv = "\uFEFFDatum;Typ služby;Částka v Kč;Poznámka\n";
       records.forEach(r => {
         const cleanNote = (r.note || "").replace(/;/g, ",");
@@ -883,15 +995,16 @@
           }
 
           const count = data.records.length;
-          if (!confirm(`Soubor obsahuje ${count} služeb. Chceš tato data nahrát do aplikace? (Stávající data se bezpečně sloučí/nahradí).`)) {
+          if (!confirm(`Soubor obsahuje ${count} služeb. Chceš tato data nahrát do aplikace?`)) {
             return;
           }
 
-          // Uložení
           setStorageData("ks_records", data.records);
           if (data.targets) setStorageData("ks_targets", data.targets);
           if (data.holidays) setStorageData("ks_holidays", data.holidays);
+          if (data.customTypes) setStorageData("ks_custom_types", data.customTypes);
 
+          updateTypeDropdown();
           showToast("Záloha úspěšně nahrána!");
           renderCurrentView();
           switchTab("tab-overview");
@@ -900,7 +1013,7 @@
         }
       };
       reader.readAsText(file);
-      e.target.value = ""; // reset inputu
+      e.target.value = "";
     }
 
     function renderStats(records) {
@@ -979,6 +1092,7 @@
 
     // Inicializace
     document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
+    updateTypeDropdown();
     renderCurrentView();
   </script>
 </body>
