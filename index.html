@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -86,7 +87,7 @@
     }
 
     .stat-number {
-      font-size: 1.7rem;
+      font-size: 1.6rem;
       font-weight: 800;
       color: var(--text);
       margin: 4px 0;
@@ -156,7 +157,7 @@
     .btn-secondary {
       background: #2a2d36;
       color: var(--text);
-      padding: 9px 12px;
+      padding: 8px 12px;
       font-size: 0.8rem;
       border-radius: 6px;
       border: 1px solid #3a3f4d;
@@ -180,7 +181,7 @@
       color: var(--primary);
       font-size: 1.4rem;
       cursor: pointer;
-      padding: 4px 12px;
+      padding: 6px 14px;
     }
 
     .month-title {
@@ -245,7 +246,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 0;
+      padding: 8px 0;
       font-size: 0.85rem;
       border-bottom: 1px solid #20232b;
     }
@@ -254,9 +255,9 @@
       color: var(--danger);
       background: none;
       border: none;
-      padding: 4px 8px;
+      padding: 4px 10px;
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       font-weight: bold;
     }
 
@@ -323,7 +324,7 @@
     <section id="tab-overview" class="tab-content active">
       <div class="month-selector">
         <button type="button" onclick="changeMonth(-1)">◀</button>
-        <div class="month-title" id="current-period-title">...</div>
+        <div class="month-title" id="current-period-title">Načítám...</div>
         <button type="button" onclick="changeMonth(1)">▶</button>
       </div>
 
@@ -400,12 +401,12 @@
     <section id="tab-history" class="tab-content">
       <div class="month-selector">
         <button type="button" onclick="changeMonth(-1)">◀</button>
-        <div class="month-title" id="history-period-title">...</div>
+        <div class="month-title" id="history-period-title">Načítám...</div>
         <button type="button" onclick="changeMonth(1)">▶</button>
       </div>
 
       <div class="card" style="padding:10px 14px; margin-bottom:12px; font-size:0.8rem; color:var(--text-muted);">
-        Kliknutím na den rozbalíš jeho služby nebo nastavíš svátek / volno.
+        Klepnutím na den rozbalíš jeho služby nebo nastavíš svátek / volno.
       </div>
 
       <div id="days-container"></div>
@@ -429,13 +430,13 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Pracovní dny</div>
+        <div class="card-title">Pracovní kalendář</div>
         <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">
           Výpočet denního tempa automaticky počítá:<br>
-          • <strong>Pondělí až Pátek:</strong> 1 den<br>
+          • <strong>Po až Pá:</strong> 1 pracovní den<br>
           • <strong>Sobota:</strong> 0,5 dne (půlden)<br>
           • <strong>Neděle:</strong> volno (0 dní)<br>
-          • <strong>Svátky:</strong> můžeš kdykoliv zapnout/vypnout klepnutím na daný den v záložce „Dny v měsíci“.
+          • <strong>Svátky / Vlastní volno:</strong> označíš klepnutím na tlačítko u daného dne v záložce „Dny v měsíci“.
         </p>
       </div>
     </section>
@@ -465,48 +466,29 @@
   </nav>
 
   <script>
-    // --- DATABÁZE A SOUBORY ---
-    let db = null;
-    const DB_NAME = "KolobeznikSluzbyDB_v3";
-    const DB_VERSION = 1;
-
+    // --- STAV A ÚLOŽIŠTĚ (Okamžité a spolehlivé) ---
     let viewDate = new Date();
     const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+
+    function getStorageData(key, fallback) {
+      try {
+        const d = localStorage.getItem(key);
+        return d ? JSON.parse(d) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function setStorageData(key, val) {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {}
+    }
 
     function getMonthKey(d) {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, "0");
       return `${y}-${m}`;
-    }
-
-    function initDB() {
-      // Předvyplníme dnešní datum hned
-      document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
-
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-
-      req.onupgradeneeded = function(e) {
-        const d = e.target.result;
-        if (!d.objectStoreNames.contains("records")) {
-          const s = d.createObjectStore("records", { keyPath: "id" });
-          s.createIndex("date", "date", { unique: false });
-        }
-        if (!d.objectStoreNames.contains("monthly_targets")) {
-          d.createObjectStore("monthly_targets", { keyPath: "monthKey" });
-        }
-        if (!d.objectStoreNames.contains("holidays")) {
-          d.createObjectStore("holidays", { keyPath: "date" });
-        }
-      };
-
-      req.onsuccess = function(e) {
-        db = e.target.result;
-        renderCurrentView();
-      };
-
-      req.onerror = function(e) {
-        alert("Chyba úložiště v prohlížeči. Zkus obnovit stránku.");
-      };
     }
 
     function changeMonth(delta) {
@@ -522,31 +504,20 @@
       document.getElementById("current-period-title").textContent = titleStr;
       document.getElementById("history-period-title").textContent = titleStr;
 
-      if (!db) return;
+      const allRecords = getStorageData("ks_records", []);
+      const targets = getStorageData("ks_targets", {});
+      const holidaysList = getStorageData("ks_holidays", []);
+      const holidays = new Set(holidaysList);
 
-      const tx = db.transaction(["records", "monthly_targets", "holidays"], "readonly");
-      const recStore = tx.objectStore("records");
-      const targetStore = tx.objectStore("monthly_targets");
-      const holidayStore = tx.objectStore("holidays");
+      const targetAmount = targets[monthKey] || 0;
+      const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(monthKey));
 
-      const recReq = recStore.getAll();
-      const targetReq = targetStore.get(monthKey);
-      const holidayReq = holidayStore.getAll();
-
-      tx.oncomplete = function() {
-        const allRecords = recReq.result || [];
-        const targetData = targetReq.result;
-        const holidays = new Set((holidayReq.result || []).map(h => h.date));
-
-        const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(monthKey));
-
-        renderOverview(monthRecords, targetData, holidays);
-        renderDaysList(monthKey, monthRecords, holidays);
-        renderStats(monthRecords);
-      };
+      renderOverview(monthRecords, targetAmount, holidays);
+      renderDaysList(monthKey, monthRecords, holidays);
+      renderStats(monthRecords);
     }
 
-    function renderOverview(monthRecords, targetData, holidays) {
+    function renderOverview(monthRecords, target, holidays) {
       const todayStr = new Date().toISOString().split("T")[0];
       const isCurrentMonth = getMonthKey(new Date()) === getMonthKey(viewDate);
 
@@ -569,7 +540,6 @@
       document.getElementById("active-days-count").textContent = activeCount;
       document.getElementById("active-days-avg").textContent = "Průměr: " + avgPerActiveDay.toLocaleString("cs-CZ") + " Kč/den";
 
-      const target = targetData ? targetData.amount : 0;
       document.getElementById("target-sold").textContent = totalMonthSum.toLocaleString("cs-CZ") + " Kč";
       document.getElementById("target-input").value = target > 0 ? target : "";
 
@@ -587,14 +557,14 @@
 
         if (remaining <= 0) {
           document.getElementById("needed-daily-rate").textContent = "CÍL SPLNĚN! 🎉";
-          document.getElementById("remaining-workdays-info").textContent = "Měsíční cíl je již úspěšně překročen.";
+          document.getElementById("remaining-workdays-info").textContent = "Měsíční cíl je úspěšně pokořen.";
         } else if (remWorkdays > 0) {
           const neededPerDay = Math.round(remaining / remWorkdays);
           document.getElementById("needed-daily-rate").textContent = neededPerDay.toLocaleString("cs-CZ") + " Kč / den";
-          document.getElementById("remaining-workdays-info").textContent = `Zbývá ${remWorkdays.toFixed(1)} prac. dní (Po–Pá = 1, So = 0.5, Ne/svátek = 0).`;
+          document.getElementById("remaining-workdays-info").textContent = `Zbývá ${remWorkdays.toFixed(1)} prac. dní (Po–Pá = 1, So = 0.5, Ne/svátky = 0).`;
         } else {
           document.getElementById("needed-daily-rate").textContent = remaining.toLocaleString("cs-CZ") + " Kč";
-          document.getElementById("remaining-workdays-info").textContent = "Žádné zbývající pracovní dny v tomto měsíci.";
+          document.getElementById("remaining-workdays-info").textContent = "Žádné zbývající pracovní dny.";
         }
       } else {
         document.getElementById("target-total-display").textContent = "Cíl: nenastaven";
@@ -602,7 +572,7 @@
         document.getElementById("target-percent").textContent = "– %";
         document.getElementById("target-progress-fill").style.width = "0%";
         document.getElementById("needed-daily-rate").textContent = "Nastav v záložce Cíle";
-        document.getElementById("remaining-workdays-info").textContent = "Zadej cílovou částku a uvidíš potřebné denní tempo.";
+        document.getElementById("remaining-workdays-info").textContent = "Zadej cílovou částku a uvidíš potřebný denní průměr.";
       }
     }
 
@@ -623,4 +593,272 @@
         if (dayOfWeek === 0) {
           continue; // Neděle
         } else if (dayOfWeek === 6) {
-    
+          workdays += 0.5; // Sobota
+        } else {
+          workdays += 1.0; // Pondělí - Pátek
+        }
+      }
+      return workdays;
+    }
+
+    function renderDaysList(monthKey, records, holidays) {
+      const container = document.getElementById("days-container");
+      container.innerHTML = "";
+
+      const parts = monthKey.split("-");
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const totalDays = new Date(year, month + 1, 0).getDate();
+
+      const recordsByDate = {};
+      records.forEach(r => {
+        if (!recordsByDate[r.date]) recordsByDate[r.date] = [];
+        recordsByDate[r.date].push(r);
+      });
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dayDate = new Date(year, month, day);
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const dayOfWeek = dayDate.getDay();
+        const dayName = DAY_NAMES[dayOfWeek];
+
+        const dayRecs = recordsByDate[dateStr] || [];
+        const dayTotal = dayRecs.reduce((sum, r) => sum + r.amount, 0);
+
+        const isSunday = dayOfWeek === 0;
+        const isSaturday = dayOfWeek === 6;
+        const isHoliday = holidays.has(dateStr);
+
+        const typeCounts = {};
+        dayRecs.forEach(r => {
+          typeCounts[r.type] = (typeCounts[r.type] || 0) + 1;
+        });
+
+        const dayRow = document.createElement("div");
+        dayRow.className = `day-row ${dayRecs.length > 0 ? "has-sales" : ""} ${isSunday ? "is-sunday" : ""} ${isHoliday ? "is-off" : ""}`;
+
+        let tagsHtml = "";
+        for (const t of Object.keys(typeCounts)) {
+          tagsHtml += `<span class="day-tag">${escapeHtml(t)}: ${typeCounts[t]}×</span>`;
+        }
+
+        if (isHoliday) {
+          tagsHtml += `<span class="day-tag" style="background:#5a1e1e; color:#ff9b9b;">Svátek / Volno</span>`;
+        } else if (isSaturday) {
+          tagsHtml += `<span class="day-tag" style="background:#2c3e50;">Sobota (0.5 dne)</span>`;
+        } else if (isSunday) {
+          tagsHtml += `<span class="day-tag" style="background:#1f2229;">Neděle</span>`;
+        }
+
+        let detailsHtml = "";
+        if (dayRecs.length > 0) {
+          detailsHtml = dayRecs.map(r => `
+            <div class="rec-item">
+              <div>
+                <strong>${escapeHtml(r.type)}</strong>: ${r.amount.toLocaleString("cs-CZ")} Kč
+                ${r.note ? `<span style="color:var(--text-muted);"> (${escapeHtml(r.note)})</span>` : ""}
+              </div>
+              <button type="button" class="rec-del-btn" onclick="deleteRecord('${r.id}', event)">✕</button>
+            </div>
+          `).join("");
+        } else {
+          detailsHtml = `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Žádné zapsané služby pro tento den.</p>`;
+        }
+
+        detailsHtml += `
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button type="button" class="btn-secondary" onclick="quickAddForDate('${dateStr}', event)">+ Zapsat službu</button>
+            <button type="button" class="btn-secondary" onclick="toggleHoliday('${dateStr}', event)">
+              ${isHoliday ? "Zrušit svátek/volno" : "Označit jako svátek/volno"}
+            </button>
+          </div>
+        `;
+
+        dayRow.innerHTML = `
+          <div class="day-header" onclick="toggleDayDetails('${dateStr}')">
+            <div>
+              <span class="day-name">${day}. ${dayName}</span>
+              <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">(${dayRecs.length})</span>
+            </div>
+            <div class="day-amount">${dayTotal > 0 ? dayTotal.toLocaleString("cs-CZ") + " Kč" : "–"}</div>
+          </div>
+          <div class="day-tags" onclick="toggleDayDetails('${dateStr}')">${tagsHtml}</div>
+          <div class="day-details" id="details-${dateStr}">
+            ${detailsHtml}
+          </div>
+        `;
+
+        container.appendChild(dayRow);
+      }
+    }
+
+    function toggleDayDetails(dateStr) {
+      const el = document.getElementById("details-" + dateStr);
+      if (el) el.classList.toggle("open");
+    }
+
+    function quickAddForDate(dateStr, e) {
+      if (e) e.stopPropagation();
+      document.getElementById("record-date").value = dateStr;
+      switchTab("tab-record");
+    }
+
+    function toggleHoliday(dateStr, e) {
+      if (e) e.stopPropagation();
+      let holidays = getStorageData("ks_holidays", []);
+      if (holidays.includes(dateStr)) {
+        holidays = holidays.filter(d => d !== dateStr);
+        showToast("Den nastaven jako pracovní");
+      } else {
+        holidays.push(dateStr);
+        showToast("Den označen jako svátek / volno");
+      }
+      setStorageData("ks_holidays", holidays);
+      renderCurrentView();
+    }
+
+    function saveRecord(e) {
+      e.preventDefault();
+      const date = document.getElementById("record-date").value;
+      const type = document.getElementById("record-type").value;
+      const amount = parseInt(document.getElementById("record-amount").value, 10);
+      const note = document.getElementById("record-note").value.trim();
+
+      if (!date || isNaN(amount) || amount <= 0) {
+        alert("Zadej platné datum a kladnou částku!");
+        return;
+      }
+
+      const records = getStorageData("ks_records", []);
+      records.push({
+        id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+        date: date,
+        type: type,
+        amount: amount,
+        note: note,
+        createdAt: new Date().toISOString()
+      });
+
+      setStorageData("ks_records", records);
+      showToast("Uloženo: " + amount.toLocaleString("cs-CZ") + " Kč");
+
+      document.getElementById("record-amount").value = "";
+      document.getElementById("record-note").value = "";
+
+      const recMonthKey = date.substring(0, 7);
+      if (getMonthKey(viewDate) !== recMonthKey) {
+        const parts = recMonthKey.split("-");
+        viewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+      }
+
+      renderCurrentView();
+      switchTab("tab-overview");
+    }
+
+    function deleteRecord(id, e) {
+      if (e) e.stopPropagation();
+      if (!confirm("Opravdu smazat tento záznam?")) return;
+
+      let records = getStorageData("ks_records", []);
+      records = records.filter(r => r.id !== id);
+      setStorageData("ks_records", records);
+      showToast("Záznam smazán");
+      renderCurrentView();
+    }
+
+    function saveMonthlyTarget() {
+      const val = parseInt(document.getElementById("target-input").value, 10);
+      if (isNaN(val) || val < 0) {
+        alert("Zadej platnou částku cíle.");
+        return;
+      }
+      const monthKey = getMonthKey(viewDate);
+      const targets = getStorageData("ks_targets", {});
+      targets[monthKey] = val;
+      setStorageData("ks_targets", targets);
+
+      showToast("Měsíční cíl uložen!");
+      renderCurrentView();
+      switchTab("tab-overview");
+    }
+
+    function renderStats(records) {
+      const container = document.getElementById("stats-by-type");
+      if (records.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted); padding:10px 0;">V tomto měsíci zatím nejsou záznamy.</p>';
+        return;
+      }
+
+      const totals = {};
+      const counts = {};
+      let allSum = 0;
+
+      records.forEach(r => {
+        totals[r.type] = (totals[r.type] || 0) + r.amount;
+        counts[r.type] = (counts[r.type] || 0) + 1;
+        allSum += r.amount;
+      });
+
+      let html = "";
+      for (const type of Object.keys(totals)) {
+        const sum = totals[type];
+        const cnt = counts[type];
+        const pct = allSum > 0 ? Math.round((sum / allSum) * 100) : 0;
+        const avg = Math.round(sum / cnt);
+
+        html += `
+          <div style="margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; font-weight:700;">
+              <span>${escapeHtml(type)}</span>
+              <span style="color:var(--primary);">${sum.toLocaleString("cs-CZ")} Kč</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+              <span>${cnt}× (průměr ${avg.toLocaleString("cs-CZ")} Kč)</span>
+              <span>${pct} %</span>
+            </div>
+            <div class="progress-bar-bg" style="height:6px; margin:4px 0 0 0;">
+              <div class="progress-bar-fill" style="width:${pct}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      setTimeout(function() { t.style.display = "none"; }, 2000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function switchTab(tabId, navBtn) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      const targetSection = document.getElementById(tabId);
+      if (targetSection) targetSection.classList.add("active");
+
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      if (navBtn) {
+        navBtn.classList.add("active");
+      } else {
+        const buttons = document.querySelectorAll(".nav-item");
+        if (tabId === "tab-overview" && buttons[0]) buttons[0].classList.add("active");
+        if (tabId === "tab-record" && buttons[1]) buttons[1].classList.add("active");
+        if (tabId === "tab-history" && buttons[2]) buttons[2].classList.add("active");
+        if (tabId === "tab-stats" && buttons[3]) buttons[3].classList.add("active");
+        if (tabId === "tab-settings" && buttons[4]) buttons[4].classList.add("active");
+      }
+      window.scrollTo(0, 0);
+    }
+
+    // Inicializace okamžitě při načtení
+    document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
+    renderCurrentView();
+  </script>
+</body>
+</html>
