@@ -1,23 +1,14 @@
 {
   "name": "Koloběžníkovy služby",
   "short_name": "Služby",
-  "description": "Osobní evidence služeb Datart",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121316",
   "theme_color": "#1c1e24",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon.svg",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/svg+xml"
     }
   ]
