@@ -369,7 +369,6 @@
           <span id="target-remaining">Zbývá: 0 Kč</span>
         </div>
 
-        <!-- Zbývající dny do konce měsíce -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:8px 10px; background:#16181e; border-radius:8px; border:1px solid var(--card-border);">
           <span style="font-size:0.85rem; color:var(--text-muted);">Do konce měsíce:</span>
           <span id="days-remaining-badge" style="font-size:0.9rem; font-weight:700; color:var(--primary);">...</span>
@@ -454,7 +453,7 @@
       </div>
     </section>
 
-    <!-- 5. NASTAVENÍ A PWA -->
+    <!-- 5. NASTAVENÍ A ZÁLOHY -->
     <section id="tab-settings" class="tab-content">
       <div class="card">
         <div class="card-title">Měsíční cíl</div>
@@ -469,13 +468,13 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Zálohování do mobilu</div>
+        <div class="card-title">Záloha do telefonu a Dropboxu</div>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-          Ulož si všechny zapsané služby, cíle i svátky do souboru v telefonu.
+          Ulož si zálohu do mobilu a rovnou ji přes nabídku sdílení odešli na svůj Dropbox.
         </p>
 
-        <button type="button" class="btn-secondary" onclick="exportBackupJSON()">
-          📥 Stáhnout kompletní zálohu (JSON)
+        <button type="button" class="btn-secondary" onclick="exportBackupAndShare()">
+          ☁️ Stáhnout zálohu a poslat do Dropboxu
         </button>
 
         <button type="button" class="btn-secondary" onclick="exportToCSV()">
@@ -705,7 +704,6 @@
       document.getElementById("target-sold").textContent = totalMonthSum.toLocaleString("cs-CZ") + " Kč";
       document.getElementById("target-input").value = target > 0 ? target : "";
 
-      // Výpočet zbývajících dní do konce měsíce
       const year = viewDate.getFullYear();
       const month = viewDate.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
@@ -970,7 +968,8 @@
       switchTab("tab-overview");
     }
 
-    function exportBackupJSON() {
+    // NOVÉ: Stáhnout zálohu a otevřít Android menu sdílení (pro Dropbox, Disk atd.)
+    async function exportBackupAndShare() {
       const backupData = {
         version: "1.1",
         appName: "KolobeznikovySluzby",
@@ -983,16 +982,36 @@
 
       const jsonStr = JSON.stringify(backupData, null, 2);
       const blob = new Blob([jsonStr], { type: "application/json" });
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
+      const file = new File([blob], filename, { type: "application/json" });
+
+      // Pokud telefon podporuje přímé sdílení souborů (Android to podporuje skvěle)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: "Záloha Koloběžníkovy služby",
+            text: "Záloha dat z aplikace",
+            files: [file]
+          });
+          return;
+        } catch (err) {
+          if (err.name !== "AbortError") {
+            console.log("Sdílení zrušeno nebo nepodporováno, stahuji běžně.");
+          }
+        }
+      }
+
+      // Fallback na klasické stažení do telefonu
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const dateStr = new Date().toISOString().split("T")[0];
       a.href = url;
-      a.download = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast("Záloha byla stažena do mobilu!");
+      showToast("Záloha uložena do telefonu!");
     }
 
     function exportToCSV() {
