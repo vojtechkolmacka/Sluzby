@@ -453,13 +453,17 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Záloha do telefonu a Dropboxu</div>
+        <div class="card-title">Záloha a obnova dat</div>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-          Ulož si zálohu do mobilu a rovnou ji přes nabídku sdílení odešli na svůj Dropbox.
+          Ulož si zálohu do telefonu nebo ji přes sdílení pošli na Dropbox.
         </p>
 
+        <button type="button" class="btn-secondary" onclick="exportBackupJSON()">
+          💾 Stáhnout JSON zálohu do telefonu
+        </button>
+
         <button type="button" class="btn-secondary" onclick="exportBackupAndShare()">
-          ☁️ Stáhnout zálohu a poslat do Dropboxu
+          ☁️ Sdílet zálohu (Dropbox / Disk)
         </button>
 
         <button type="button" class="btn-secondary" onclick="exportToCSV()">
@@ -529,7 +533,6 @@
       "Instalace počítače"
     ];
 
-    // --- BEZPEČNÁ DATABÁZE (IndexedDB - odolná proti smazání mezipaměti) ---
     function initDB(callback) {
       if (db) {
         if (callback) callback();
@@ -1013,6 +1016,41 @@
       });
     }
 
+    // Klasické stažení JSON zálohy do telefonu
+    function exportBackupJSON() {
+      dbGet("ks_records", [], function(records) {
+        dbGet("ks_targets", {}, function(targets) {
+          dbGet("ks_holidays", [], function(holidays) {
+            dbGet("ks_custom_types", [], function(customTypes) {
+              const backupData = {
+                version: "2.0",
+                appName: "KolobeznikovySluzby",
+                exportedAt: new Date().toISOString(),
+                records: records,
+                targets: targets,
+                holidays: holidays,
+                customTypes: customTypes
+              };
+
+              const jsonStr = JSON.stringify(backupData, null, 2);
+              const blob = new Blob([jsonStr], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              const dateStr = new Date().toISOString().split("T")[0];
+              a.href = url;
+              a.download = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              showToast("Záloha uložena do telefonu!");
+            });
+          });
+        });
+      });
+    }
+
+    // Sdílení zálohy na Dropbox / Disk
     async function exportBackupAndShare() {
       dbGet("ks_records", [], function(records) {
         dbGet("ks_targets", {}, function(targets) {
@@ -1043,15 +1081,8 @@
                 return;
               }
 
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = filename;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              showToast("Záloha uložena do telefonu!");
+              // Fallback
+              exportBackupJSON();
             });
           });
         });
@@ -1178,14 +1209,14 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    function switchTab(tabId, navBtn) {
+    function switchTab(tabId, navNavBtn) {
       document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
       const targetSection = document.getElementById(tabId);
       if (targetSection) targetSection.classList.add("active");
 
       document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
-      if (navBtn) {
-        navBtn.classList.add("active");
+      if (navNavBtn) {
+        navNavBtn.classList.add("active");
       } else {
         const buttons = document.querySelectorAll(".nav-item");
         if (tabId === "tab-overview" && buttons[0]) buttons[0].classList.add("active");
