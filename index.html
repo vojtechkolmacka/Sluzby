@@ -177,21 +177,6 @@
       font-weight: 600;
     }
 
-    .btn-install {
-      background: linear-gradient(135deg, #ffaa00, #ff8800);
-      color: #000;
-      padding: 15px;
-      font-size: 1rem;
-      font-weight: 800;
-      border-radius: 8px;
-      border: none;
-      width: 100%;
-      cursor: pointer;
-      margin-bottom: 12px;
-      display: block;
-      text-align: center;
-    }
-
     .month-selector {
       display: flex;
       align-items: center;
@@ -527,6 +512,10 @@
   </nav>
 
   <script>
+    let db = null;
+    const DB_NAME = "KolobeznikSluzbyIndexedDB";
+    const DB_VERSION = 1;
+
     let viewDate = new Date();
     const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
@@ -540,19 +529,66 @@
       "Instalace počítače"
     ];
 
-    function getStorageData(key, fallback) {
-      try {
-        const d = localStorage.getItem(key);
-        return d ? JSON.parse(d) : fallback;
-      } catch (e) {
-        return fallback;
+    // --- BEZPEČNÁ DATABÁZE (IndexedDB - odolná proti smazání mezipaměti) ---
+    function initDB(callback) {
+      if (db) {
+        if (callback) callback();
+        return;
       }
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = function(e) {
+        const database = e.target.result;
+        if (!database.objectStoreNames.contains("store")) {
+          database.createObjectStore("store");
+        }
+      };
+
+      request.onsuccess = function(e) {
+        db = e.target.result;
+        if (callback) callback();
+      };
+
+      request.onerror = function(e) {
+        console.error("Chyba otevírání IndexedDB", e.target.error);
+        alert("Chyba při otevírání trvalého úložiště v prohlížeči.");
+      };
     }
 
-    function setStorageData(key, val) {
-      try {
-        localStorage.setItem(key, JSON.stringify(val));
-      } catch (e) {}
+    function dbGet(key, fallback, callback) {
+      initDB(function() {
+        try {
+          const tx = db.transaction("store", "readonly");
+          const store = tx.objectStore("store");
+          const req = store.get(key);
+          req.onsuccess = function() {
+            callback(req.result !== undefined ? req.result : fallback);
+          };
+          req.onerror = function() {
+            callback(fallback);
+          };
+        } catch (err) {
+          callback(fallback);
+        }
+      });
+    }
+
+    function dbSet(key, val, callback) {
+      initDB(function() {
+        try {
+          const tx = db.transaction("store", "readwrite");
+          const store = tx.objectStore("store");
+          store.put(val, key);
+          tx.oncomplete = function() {
+            if (callback) callback();
+          };
+          tx.onerror = function(err) {
+            console.error("Chyba ukládání do IndexedDB", err);
+          };
+        } catch (err) {
+          console.error("Chyba transakce IndexedDB", err);
+        }
+      });
     }
 
     function getMonthKey(d) {
@@ -566,26 +602,23 @@
       renderCurrentView();
     }
 
-    function getAllTypes() {
-      const custom = getStorageData("ks_custom_types", []);
-      return [...DEFAULT_TYPES, ...custom];
-    }
-
     function updateTypeDropdown(selectedVal) {
-      const select = document.getElementById("record-type");
-      const allTypes = getAllTypes();
-      
-      let html = "";
-      allTypes.forEach((t, i) => {
-        html += `<option value="${escapeHtml(t)}">${i + 1}. ${escapeHtml(t)}</option>`;
+      dbGet("ks_custom_types", [], function(custom) {
+        const allTypes = [...DEFAULT_TYPES, ...custom];
+        const select = document.getElementById("record-type");
+        
+        let html = "";
+        allTypes.forEach((t, i) => {
+          html += `<option value="${escapeHtml(t)}">${i + 1}. ${escapeHtml(t)}</option>`;
+        });
+        html += `<option value="__custom__" style="color:var(--primary); font-weight:bold;">+ Vlastní typ služby...</option>`;
+
+        select.innerHTML = html;
+
+        if (selectedVal && allTypes.includes(selectedVal)) {
+          select.value = selectedVal;
+        }
       });
-      html += `<option value="__custom__" style="color:var(--primary); font-weight:bold;">+ Vlastní typ služby...</option>`;
-
-      select.innerHTML = html;
-
-      if (selectedVal && allTypes.includes(selectedVal)) {
-        select.value = selectedVal;
-      }
     }
 
     function handleTypeSelectChange(selectEl) {
@@ -606,54 +639,57 @@
         return;
       }
 
-      let custom = getStorageData("ks_custom_types", []);
-      if (DEFAULT_TYPES.includes(val) || custom.includes(val)) {
-        alert("Tento typ služby již existuje.");
-        return;
-      }
+      dbGet("ks_custom_types", [], function(custom) {
+        if (DEFAULT_TYPES.includes(val) || custom.includes(val)) {
+          alert("Tento typ služby již existuje.");
+          return;
+        }
 
-      custom.push(val);
-      setStorageData("ks_custom_types", custom);
+        custom.push(val);
+        dbSet("ks_custom_types", custom, function() {
+          input.value = "";
+          document.getElementById("custom-type-container").style.display = "none";
 
-      input.value = "";
-      document.getElementById("custom-type-container").style.display = "none";
-
-      updateTypeDropdown(val);
-      renderCustomTypesList();
-      showToast(`Typ „${val}“ byl přidán`);
+          updateTypeDropdown(val);
+          renderCustomTypesList();
+          showToast(`Typ „${val}“ byl přidán`);
+        });
+      });
     }
 
     function deleteCustomType(typeToDelete) {
       if (!confirm(`Chceš odebrat typ „${typeToDelete}“ z nabídky? (Existující záznamy s touto službou zůstanou v historii zachovány).`)) return;
 
-      let custom = getStorageData("ks_custom_types", []);
-      custom = custom.filter(t => t !== typeToDelete);
-      setStorageData("ks_custom_types", custom);
-
-      updateTypeDropdown();
-      renderCustomTypesList();
-      showToast("Typ služby byl odebrán");
+      dbGet("ks_custom_types", [], function(custom) {
+        custom = custom.filter(t => t !== typeToDelete);
+        dbSet("ks_custom_types", custom, function() {
+          updateTypeDropdown();
+          renderCustomTypesList();
+          showToast("Typ služby byl odebrán");
+        });
+      });
     }
 
     function renderCustomTypesList() {
-      const container = document.getElementById("custom-types-list");
-      const custom = getStorageData("ks_custom_types", []);
+      dbGet("ks_custom_types", [], function(custom) {
+        const container = document.getElementById("custom-types-list");
 
-      if (custom.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Žádné vlastní typy nebyly vytvořeny.</p>';
-        return;
-      }
+        if (custom.length === 0) {
+          container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Žádné vlastní typy nebyly vytvořeny.</p>';
+          return;
+        }
 
-      let html = "";
-      custom.forEach(t => {
-        html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #20232b; font-size:0.9rem;">
-            <span>${escapeHtml(t)}</span>
-            <button type="button" class="rec-del-btn" style="font-size:0.9rem;" onclick="deleteCustomType('${escapeHtml(t)}')">✕ Odebrat</button>
-          </div>
-        `;
+        let html = "";
+        custom.forEach(t => {
+          html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #20232b; font-size:0.9rem;">
+              <span>${escapeHtml(t)}</span>
+              <button type="button" class="rec-del-btn" style="font-size:0.9rem;" onclick="deleteCustomType('${escapeHtml(t)}')">✕ Odebrat</button>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
       });
-      container.innerHTML = html;
     }
 
     function renderCurrentView() {
@@ -664,18 +700,20 @@
       document.getElementById("current-period-title").textContent = titleStr;
       document.getElementById("history-period-title").textContent = titleStr;
 
-      const allRecords = getStorageData("ks_records", []);
-      const targets = getStorageData("ks_targets", {});
-      const holidaysList = getStorageData("ks_holidays", []);
-      const holidays = new Set(holidaysList);
+      dbGet("ks_records", [], function(allRecords) {
+        dbGet("ks_targets", {}, function(targets) {
+          dbGet("ks_holidays", [], function(holidaysList) {
+            const holidays = new Set(holidaysList);
+            const targetAmount = targets[monthKey] || 0;
+            const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(monthKey));
 
-      const targetAmount = targets[monthKey] || 0;
-      const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(monthKey));
-
-      renderOverview(monthRecords, targetAmount, holidays);
-      renderDaysList(monthKey, monthRecords, holidays);
-      renderStats(monthRecords);
-      renderCustomTypesList();
+            renderOverview(monthRecords, targetAmount, holidays);
+            renderDaysList(monthKey, monthRecords, holidays);
+            renderStats(monthRecords);
+            renderCustomTypesList();
+          });
+        });
+      });
     }
 
     function renderOverview(monthRecords, target, holidays) {
@@ -886,16 +924,18 @@
 
     function toggleHoliday(dateStr, e) {
       if (e) e.stopPropagation();
-      let holidays = getStorageData("ks_holidays", []);
-      if (holidays.includes(dateStr)) {
-        holidays = holidays.filter(d => d !== dateStr);
-        showToast("Den nastaven jako pracovní");
-      } else {
-        holidays.push(dateStr);
-        showToast("Den označen jako svátek / volno");
-      }
-      setStorageData("ks_holidays", holidays);
-      renderCurrentView();
+      dbGet("ks_holidays", [], function(holidays) {
+        if (holidays.includes(dateStr)) {
+          holidays = holidays.filter(d => d !== dateStr);
+          showToast("Den nastaven jako pracovní");
+        } else {
+          holidays.push(dateStr);
+          showToast("Den označen jako svátek / volno");
+        }
+        dbSet("ks_holidays", holidays, function() {
+          renderCurrentView();
+        });
+      });
     }
 
     function saveRecord(e) {
@@ -915,41 +955,45 @@
         return;
       }
 
-      const records = getStorageData("ks_records", []);
-      records.push({
-        id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-        date: date,
-        type: type,
-        amount: amount,
-        note: note,
-        createdAt: new Date().toISOString()
+      dbGet("ks_records", [], function(records) {
+        records.push({
+          id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+          date: date,
+          type: type,
+          amount: amount,
+          note: note,
+          createdAt: new Date().toISOString()
+        });
+
+        dbSet("ks_records", records, function() {
+          showToast("Uloženo: " + amount.toLocaleString("cs-CZ") + " Kč");
+
+          document.getElementById("record-amount").value = "";
+          document.getElementById("record-note").value = "";
+
+          const recMonthKey = date.substring(0, 7);
+          if (getMonthKey(viewDate) !== recMonthKey) {
+            const parts = recMonthKey.split("-");
+            viewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+          }
+
+          renderCurrentView();
+          switchTab("tab-overview");
+        });
       });
-
-      setStorageData("ks_records", records);
-      showToast("Uloženo: " + amount.toLocaleString("cs-CZ") + " Kč");
-
-      document.getElementById("record-amount").value = "";
-      document.getElementById("record-note").value = "";
-
-      const recMonthKey = date.substring(0, 7);
-      if (getMonthKey(viewDate) !== recMonthKey) {
-        const parts = recMonthKey.split("-");
-        viewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
-      }
-
-      renderCurrentView();
-      switchTab("tab-overview");
     }
 
     function deleteRecord(id, e) {
       if (e) e.stopPropagation();
       if (!confirm("Opravdu smazat tento záznam?")) return;
 
-      let records = getStorageData("ks_records", []);
-      records = records.filter(r => r.id !== id);
-      setStorageData("ks_records", records);
-      showToast("Záznam smazán");
-      renderCurrentView();
+      dbGet("ks_records", [], function(records) {
+        records = records.filter(r => r.id !== id);
+        dbSet("ks_records", records, function() {
+          showToast("Záznam smazán");
+          renderCurrentView();
+        });
+      });
     }
 
     function saveMonthlyTarget() {
@@ -959,87 +1003,88 @@
         return;
       }
       const monthKey = getMonthKey(viewDate);
-      const targets = getStorageData("ks_targets", {});
-      targets[monthKey] = val;
-      setStorageData("ks_targets", targets);
-
-      showToast("Měsíční cíl uložen!");
-      renderCurrentView();
-      switchTab("tab-overview");
+      dbGet("ks_targets", {}, function(targets) {
+        targets[monthKey] = val;
+        dbSet("ks_targets", targets, function() {
+          showToast("Měsíční cíl uložen!");
+          renderCurrentView();
+          switchTab("tab-overview");
+        });
+      });
     }
 
-    // NOVÉ: Stáhnout zálohu a otevřít Android menu sdílení (pro Dropbox, Disk atd.)
     async function exportBackupAndShare() {
-      const backupData = {
-        version: "1.1",
-        appName: "KolobeznikovySluzby",
-        exportedAt: new Date().toISOString(),
-        records: getStorageData("ks_records", []),
-        targets: getStorageData("ks_targets", {}),
-        holidays: getStorageData("ks_holidays", []),
-        customTypes: getStorageData("ks_custom_types", [])
-      };
+      dbGet("ks_records", [], function(records) {
+        dbGet("ks_targets", {}, function(targets) {
+          dbGet("ks_holidays", [], function(holidays) {
+            dbGet("ks_custom_types", [], function(customTypes) {
+              const backupData = {
+                version: "2.0",
+                appName: "KolobeznikovySluzby",
+                exportedAt: new Date().toISOString(),
+                records: records,
+                targets: targets,
+                holidays: holidays,
+                customTypes: customTypes
+              };
 
-      const jsonStr = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const dateStr = new Date().toISOString().split("T")[0];
-      const filename = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
-      const file = new File([blob], filename, { type: "application/json" });
+              const jsonStr = JSON.stringify(backupData, null, 2);
+              const blob = new Blob([jsonStr], { type: "application/json" });
+              const dateStr = new Date().toISOString().split("T")[0];
+              const filename = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
+              const file = new File([blob], filename, { type: "application/json" });
 
-      // Pokud telefon podporuje přímé sdílení souborů (Android to podporuje skvěle)
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            title: "Záloha Koloběžníkovy služby",
-            text: "Záloha dat z aplikace",
-            files: [file]
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                  title: "Záloha Koloběžníkovy služby",
+                  text: "Záloha dat z aplikace",
+                  files: [file]
+                }).catch(() => {});
+                return;
+              }
+
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              showToast("Záloha uložena do telefonu!");
+            });
           });
-          return;
-        } catch (err) {
-          if (err.name !== "AbortError") {
-            console.log("Sdílení zrušeno nebo nepodporováno, stahuji běžně.");
-          }
-        }
-      }
-
-      // Fallback na klasické stažení do telefonu
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast("Záloha uložena do telefonu!");
+        });
+      });
     }
 
     function exportToCSV() {
-      const records = getStorageData("ks_records", []);
-      if (records.length === 0) {
-        alert("Zatím nejsou žádné záznamy k exportu.");
-        return;
-      }
+      dbGet("ks_records", [], function(records) {
+        if (records.length === 0) {
+          alert("Zatím nejsou žádné záznamy k exportu.");
+          return;
+        }
 
-      records.sort((a, b) => new Date(a.date) - new Date(b.date));
+        records.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      let csv = "\uFEFFDatum;Typ služby;Částka v Kč;Poznámka\n";
-      records.forEach(r => {
-        const cleanNote = (r.note || "").replace(/;/g, ",");
-        csv += `${r.date};${r.type};${r.amount};${cleanNote}\n`;
+        let csv = "\uFEFFDatum;Typ služby;Částka v Kč;Poznámka\n";
+        records.forEach(r => {
+          const cleanNote = (r.note || "").replace(/;/g, ",");
+          csv += `${r.date};${r.type};${r.amount};${cleanNote}\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const dateStr = new Date().toISOString().split("T")[0];
+        a.href = url;
+        a.download = `sluzby-export-${dateStr}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Tabulka CSV stažena!");
       });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const dateStr = new Date().toISOString().split("T")[0];
-      a.href = url;
-      a.download = `sluzby-export-${dateStr}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast("Tabulka CSV stažena!");
     }
 
     function handleFileImport(e) {
@@ -1060,15 +1105,16 @@
             return;
           }
 
-          setStorageData("ks_records", data.records);
-          if (data.targets) setStorageData("ks_targets", data.targets);
-          if (data.holidays) setStorageData("ks_holidays", data.holidays);
-          if (data.customTypes) setStorageData("ks_custom_types", data.customTypes);
+          dbSet("ks_records", data.records, function() {
+            if (data.targets) dbSet("ks_targets", data.targets);
+            if (data.holidays) dbSet("ks_holidays", data.holidays);
+            if (data.customTypes) dbSet("ks_custom_types", data.customTypes);
 
-          updateTypeDropdown();
-          showToast("Záloha úspěšně nahrána!");
-          renderCurrentView();
-          switchTab("tab-overview");
+            updateTypeDropdown();
+            showToast("Záloha úspěšně nahrána!");
+            renderCurrentView();
+            switchTab("tab-overview");
+          });
         } catch (err) {
           alert("Chyba při čtení souboru: " + err.message);
         }
@@ -1157,9 +1203,12 @@
       });
     }
 
+    // Start aplikace
     document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
-    updateTypeDropdown();
-    renderCurrentView();
+    initDB(function() {
+      updateTypeDropdown();
+      renderCurrentView();
+    });
   </script>
 </body>
 </html>
