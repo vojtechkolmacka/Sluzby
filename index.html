@@ -369,7 +369,13 @@
           <span id="target-remaining">Zbývá: 0 Kč</span>
         </div>
 
-        <div style="margin-top:14px; padding-top:10px; border-top:1px solid var(--card-border);">
+        <!-- Zbývající dny do konce měsíce -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:8px 10px; background:#16181e; border-radius:8px; border:1px solid var(--card-border);">
+          <span style="font-size:0.85rem; color:var(--text-muted);">Do konce měsíce:</span>
+          <span id="days-remaining-badge" style="font-size:0.9rem; font-weight:700; color:var(--primary);">...</span>
+        </div>
+
+        <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--card-border);">
           <div style="font-size:0.85rem; color:var(--text-muted);">Potřebný denní průměr pro splnění (od zítřka):</div>
           <div style="font-size:1.3rem; font-weight:800; color:var(--accent); margin:4px 0;" id="needed-daily-rate">0 Kč / den</div>
           <div style="font-size:0.75rem; color:var(--text-muted);" id="remaining-workdays-info">
@@ -453,7 +459,7 @@
       <div class="card">
         <div class="card-title">Měsíční cíl</div>
         <label for="target-input">Cílová částka v Kč pro vybraný měsíc</label>
-        <input type="number" id="target-input" placeholder="např. 89000" min="0" step="1000" inputmode="numeric">
+        <input type="number" id="target-input" placeholder="např. 88000" min="0" step="1000" inputmode="numeric">
         <button type="button" class="btn" onclick="saveMonthlyTarget()">Uložit cíl měsíce</button>
       </div>
 
@@ -699,6 +705,22 @@
       document.getElementById("target-sold").textContent = totalMonthSum.toLocaleString("cs-CZ") + " Kč";
       document.getElementById("target-input").value = target > 0 ? target : "";
 
+      // Výpočet zbývajících dní do konce měsíce
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const currentDay = isCurrentMonth ? new Date().getDate() : 1;
+      const calDaysLeft = Math.max(0, lastDay - currentDay);
+
+      const remWorkdays = calculateRemainingWorkdays(viewDate, holidays, isCurrentMonth);
+
+      const badge = document.getElementById("days-remaining-badge");
+      if (isCurrentMonth) {
+        badge.textContent = `${calDaysLeft} ${getDaysWord(calDaysLeft)} (${remWorkdays.toFixed(1)} prac.)`;
+      } else {
+        badge.textContent = `Celkem ${lastDay} dní (${remWorkdays.toFixed(1)} prac.)`;
+      }
+
       if (target > 0) {
         const remaining = Math.max(0, target - totalMonthSum);
         const realPct = Math.round((totalMonthSum / target) * 100);
@@ -708,8 +730,6 @@
         document.getElementById("target-remaining").textContent = "Zbývá: " + remaining.toLocaleString("cs-CZ") + " Kč";
         document.getElementById("target-percent").textContent = realPct + " %";
         document.getElementById("target-progress-fill").style.width = fillPct + "%";
-
-        const remWorkdays = calculateRemainingWorkdays(viewDate, holidays, isCurrentMonth);
 
         if (remaining <= 0) {
           document.getElementById("needed-daily-rate").textContent = "CÍL SPLNĚN! 🎉";
@@ -732,13 +752,17 @@
       }
     }
 
-    // VÝPOČET ZBÝVAJÍCÍCH DNŮ VŽDY AŽ OD ZÍTŘKA
+    function getDaysWord(n) {
+      if (n === 1) return "den";
+      if (n >= 2 && n <= 4) return "dny";
+      return "dní";
+    }
+
     function calculateRemainingWorkdays(d, holidays, isCurrentMonth) {
       const year = d.getFullYear();
       const month = d.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
       
-      // Pro aktuální měsíc počítáme vždy až od zítřka
       const startDay = isCurrentMonth ? (new Date().getDate() + 1) : 1;
 
       let workdays = 0;
@@ -750,11 +774,11 @@
         if (holidays.has(curDateStr)) continue;
 
         if (dayOfWeek === 0) {
-          continue; // Neděle = 0 dní
+          continue;
         } else if (dayOfWeek === 6) {
-          workdays += 0.5; // Sobota = 0.5 dne
+          workdays += 0.5;
         } else {
-          workdays += 1.0; // Pondělí až Pátek = 1 den
+          workdays += 1.0;
         }
       }
       return workdays;
@@ -1114,7 +1138,6 @@
       });
     }
 
-    // Spuštění po načtení stránky
     document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
     updateTypeDropdown();
     renderCurrentView();
