@@ -716,8 +716,9 @@
     }
 
     function renderOverview(monthRecords, target, holidays) {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const isCurrentMonth = getMonthKey(new Date()) === getMonthKey(viewDate);
+      const todayObj = new Date();
+      const todayStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
+      const isCurrentMonth = getMonthKey(todayObj) === getMonthKey(viewDate);
 
       let todaySum = 0;
       let todayCount = 0;
@@ -744,7 +745,7 @@
       const year = viewDate.getFullYear();
       const month = viewDate.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
-      const currentDay = isCurrentMonth ? new Date().getDate() : 1;
+      const currentDay = isCurrentMonth ? todayObj.getDate() : 1;
       const calDaysLeft = Math.max(0, lastDay - currentDay);
 
       const remWorkdays = calculateRemainingWorkdays(viewDate, holidays, isCurrentMonth);
@@ -798,7 +799,8 @@
       const month = d.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
       
-      const startDay = isCurrentMonth ? (new Date().getDate() + 1) : 1;
+      const todayObj = new Date();
+      const startDay = isCurrentMonth ? (todayObj.getDate() + 1) : 1;
 
       let workdays = 0;
       for (let day = startDay; day <= lastDay; day++) {
@@ -1190,7 +1192,11 @@
       });
     }
 
-    document.getElementById("record-date").value = new Date().toISOString().split("T")[0];
+    // Start aplikace s opraveným lokálním datem
+    const todayObj = new Date();
+    const localDateStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
+    document.getElementById("record-date").value = localDateStr;
+
     initDB(function() {
       updateTypeDropdown();
       renderCurrentView();
