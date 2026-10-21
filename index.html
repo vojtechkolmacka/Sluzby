@@ -629,12 +629,19 @@
 
       async _seedInitialTypes() {
         const types = await this.getAllServiceTypes();
-        if (types.length === 0) {
-          const tx = this.db.transaction('serviceTypes', 'readwrite');
-          const store = tx.objectStore('serviceTypes');
-          DEFAULT_SERVICE_TYPES.forEach(t => store.put(t));
-          return new Promise(res => tx.oncomplete = () => res());
+        // Pokud chybí jakýkoliv typ z výchozích, doplní se a aktivuje
+        const tx = this.db.transaction('serviceTypes', 'readwrite');
+        const store = tx.objectStore('serviceTypes');
+        for (const def of DEFAULT_SERVICE_TYPES) {
+          const exists = types.find(t => t.id === def.id);
+          if (!exists) {
+            store.put(def);
+          } else if (exists.active === undefined) {
+            exists.active = true;
+            store.put(exists);
+          }
         }
+        return new Promise(res => tx.oncomplete = () => res());
       }
 
       async addEntry(entry) {
@@ -689,8 +696,11 @@
           const tx = this.db.transaction('serviceTypes', 'readonly');
           const req = tx.objectStore('serviceTypes').getAll();
           req.onsuccess = () => {
-            const list = req.result || [];
-            list.sort((a, b) => a.order - b.order);
+            let list = req.result || [];
+            if (list.length === 0) {
+              list = [...DEFAULT_SERVICE_TYPES];
+            }
+            list.sort((a, b) => (a.order || 99) - (b.order || 99));
             res(list);
           };
           req.onerror = () => rej(req.error);
@@ -822,23 +832,20 @@
         };
       }
 
-      // Všestranný import pro starý formát (records) i nový formát
       async importData(importedJson, mode = 'merge') {
         let normalizedEntries = [];
         let normalizedGoals = {};
         let normalizedHolidays = [];
         let normalizedTypes = [];
 
-        // Kontrola přítomnosti záznamů v jakémkoliv tvaru
         const recordsList = Array.isArray(importedJson.records) 
           ? importedJson.records 
           : (importedJson.data && Array.isArray(importedJson.data.entries) ? importedJson.data.entries : null);
 
         if (!recordsList) {
-          throw new Error('Soubor neobsahuje pole záznamů (records ani data.entries).');
+          throw new Error('Soubor neobsahuje záznamy služeb.');
         }
 
-        // 1. Zpracování záznamů služeb
         recordsList.forEach(r => {
           let halere = 0;
           if (typeof r.amountHalere === 'number') {
@@ -862,7 +869,6 @@
           });
         });
 
-        // 2. Zpracování měsíčních cílů
         if (importedJson.targets && typeof importedJson.targets === 'object') {
           normalizedGoals = importedJson.targets;
         } else if (importedJson.data && Array.isArray(importedJson.data.monthMeta)) {
@@ -871,7 +877,6 @@
           });
         }
 
-        // 3. Zpracování svátků / volna
         if (Array.isArray(importedJson.holidays)) {
           normalizedHolidays = importedJson.holidays;
         } else if (importedJson.data && Array.isArray(importedJson.data.daysConfig)) {
@@ -880,7 +885,6 @@
           });
         }
 
-        // 4. Zpracování typů
         if (Array.isArray(importedJson.customTypes)) {
           normalizedTypes = importedJson.customTypes;
         } else if (importedJson.data && Array.isArray(importedJson.data.serviceTypes)) {
@@ -890,7 +894,7 @@
         return new Promise((res, rej) => {
           const tx = this.db.transaction(['entries', 'serviceTypes', 'monthMeta', 'daysConfig'], 'readwrite');
           tx.oncomplete = () => res(normalizedEntries.length);
-          tx.onerror = () => rej(new Error('Chyba při zápisu do IndexedDB.'));
+          tx.onerror = () => rej(new Error('Chyba při zápisu do databáze.'));
 
           const entryStore = tx.objectStore('entries');
           const typeStore = tx.objectStore('serviceTypes');
@@ -903,6 +907,9 @@
             metaStore.clear();
             daysStore.clear();
           }
+
+          // Vždy zajistit přítomnost a aktivitu výchozích typů
+          DEFAULT_SERVICE_TYPES.forEach(t => typeStore.put(t));
 
           normalizedEntries.forEach(e => entryStore.put(e));
 
@@ -926,6 +933,7 @@
             if (typeof t === 'string') {
               typeStore.put({ id: 'custom_' + t, name: t, active: true, order: 99 });
             } else if (t && t.id) {
+              t.active = true;
               typeStore.put(t);
             }
           });
@@ -984,12 +992,13 @@
         });
       });
 
-      document.getElementById('btn-quick-add').addEventListener('click', () => {
+      document.getElementById('btn-quick-add').addEventListener('click', async () => {
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
         document.querySelector('.nav-item[data-view="view-add"]').classList.add('active');
         document.getElementById('view-add').classList.remove('hidden');
         document.getElementById('entry-date').value = getTodayString();
+        await refreshTypesDropdown();
       });
 
       document.getElementById('btn-prev-month').addEventListener('click', () => changeMonth(-1));
@@ -1025,12 +1034,18 @@
       else if (activeNav === 'view-settings') await renderSettings();
     }
 
+    // Bezpečné sestavení rozbalovacího seznamu služeb
     async function refreshTypesDropdown(selectId = 'entry-service-type', selectedVal = null) {
       cachedTypes = await storage.getAllServiceTypes();
       const select = document.getElementById(selectId);
+      if (!select) return;
+
       select.innerHTML = '';
 
-      cachedTypes.filter(t => t.active).forEach(t => {
+      // Zobrazit všechny typy, které nejsou explicitně vypnuté (false)
+      const availableTypes = cachedTypes.filter(t => t.active !== false);
+
+      availableTypes.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.id;
         opt.textContent = t.name;
@@ -1046,7 +1061,11 @@
         select.value = selectedVal;
       } else {
         const last = await storage.getSetting('lastUsedTypeId');
-        if (last && cachedTypes.some(t => t.id === last && t.active)) select.value = last;
+        if (last && availableTypes.some(t => t.id === last)) {
+          select.value = last;
+        } else if (availableTypes.length > 0) {
+          select.value = availableTypes[0].id;
+        }
       }
     }
 
@@ -1324,6 +1343,7 @@
 
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+
       document.querySelector('.nav-item[data-view="view-add"]').classList.add('active');
       document.getElementById('view-add').classList.remove('hidden');
 
@@ -1389,8 +1409,8 @@
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);';
         row.innerHTML = `
-          <div><strong>${escapeHtml(t.name)}</strong> ${!t.active ? '<span style="color:var(--danger); font-size:0.75rem;">(Vypnuto)</span>' : ''}</div>
-          <button class="btn btn-secondary btn-sm" onclick="toggleTypeActive('${t.id}')">${t.active ? 'Vypnout' : 'Zapnout'}</button>
+          <div><strong>${escapeHtml(t.name)}</strong> ${t.active === false ? '<span style="color:var(--danger); font-size:0.75rem;">(Vypnuto)</span>' : ''}</div>
+          <button class="btn btn-secondary btn-sm" onclick="toggleTypeActive('${t.id}')">${t.active === false ? 'Zapnout' : 'Vypnout'}</button>
         `;
         container.appendChild(row);
       });
@@ -1400,7 +1420,7 @@
       const types = await storage.getAllServiceTypes();
       const t = types.find(x => x.id === id);
       if (!t) return;
-      t.active = !t.active;
+      t.active = t.active === false ? true : false;
       await storage.saveServiceType(t);
       await refreshTypesDropdown();
       await renderSettings();
@@ -1460,7 +1480,6 @@
       showToast('CSV exportováno');
     }
 
-    // Bezpečný a univerzální import
     async function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1469,7 +1488,6 @@
       reader.onload = async (ev) => {
         try {
           let text = ev.target.result;
-          // Odstranění případného UTF-8 BOM
           if (text.charCodeAt(0) === 0xFEFF) {
             text = text.slice(1);
           }
@@ -1493,7 +1511,7 @@
       };
 
       reader.onerror = () => {
-        alert('Nepodařilo se přečíst soubor z disku.');
+        alert('Nepodařilo se přečíst soubor.');
         e.target.value = '';
       };
 
