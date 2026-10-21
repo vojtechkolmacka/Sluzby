@@ -17,6 +17,7 @@
       --primary: #238636;
       --accent: #58a6ff;
       --accent-gold: #f59f00;
+      --accent-best: #7ee787;
       --danger: #da3633;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --nav-height: 64px;
@@ -369,10 +370,15 @@
       background: var(--border);
       border-radius: 2px 2px 0 0;
       min-height: 2px;
+      transition: height 0.2s ease;
     }
 
     .bar-col.has-value {
       background: var(--accent-gold);
+    }
+
+    .bar-col.is-best {
+      background: var(--accent-best);
     }
 
     .hidden {
@@ -473,8 +479,12 @@
         + Zapsat novou službu
       </button>
 
+      <!-- Karta grafu s ukazatelem denního maxima -->
       <div class="card">
-        <div class="card-title">Průběh tržeb v měsíci</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-title" style="margin:0;">PRŮBĚH TRŽEB V MĚSÍCI</div>
+          <div id="stat-best-day-badge" style="font-size:0.8rem; font-weight:700; color:#7ee787;">Max: —</div>
+        </div>
         <div id="overview-chart" class="bar-chart"></div>
       </div>
     </section>
@@ -854,7 +864,6 @@
           }
 
           const typeName = (r.type || r.serviceTypeName || 'Služba').trim();
-          // Normalizace ID
           const typeId = typeName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
 
           normalizedEntries.push({
@@ -1042,7 +1051,7 @@
 
       availableTypes.forEach(t => {
         const opt = document.createElement('option');
-        opt.value = t.name; // Ukládáme a párujeme podle názvu pro 100% spolehlivost
+        opt.value = t.name;
         opt.textContent = t.name;
         select.appendChild(opt);
       });
@@ -1151,24 +1160,51 @@
       renderOverviewChart(dayTotals);
     }
 
+    // Vykreslení grafu s detekcí a zobrazením maxima
     function renderOverviewChart(dayTotals) {
       const chart = document.getElementById('overview-chart');
+      const badgeMax = document.getElementById('stat-best-day-badge');
       chart.innerHTML = '';
+
       const [y, m] = currentMonthKey.split('-').map(Number);
       const days = new Date(y, m, 0).getDate();
 
-      let max = 1;
+      let max = 0;
+      let bestDayNum = 0;
+
+      // Hledání nejlepšího dne
       for (let i = 1; i <= days; i++) {
         const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
-        if ((dayTotals[dStr] || 0) > max) max = dayTotals[dStr];
+        const val = dayTotals[dStr] || 0;
+        if (val > max) {
+          max = val;
+          bestDayNum = i;
+        }
       }
+
+      // Aktualizace štítku maxima
+      if (max > 0 && badgeMax) {
+        badgeMax.textContent = `Max: ${bestDayNum}. ${m}. (${formatKc(max)})`;
+      } else if (badgeMax) {
+        badgeMax.textContent = 'Max: —';
+      }
+
+      const scaleMax = max > 0 ? max : 1;
 
       for (let i = 1; i <= days; i++) {
         const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
         const val = dayTotals[dStr] || 0;
         const col = document.createElement('div');
-        col.className = 'bar-col' + (val > 0 ? ' has-value' : '');
-        col.style.height = `${Math.max((val / max) * 100, 2)}%`;
+
+        let cls = 'bar-col';
+        if (val > 0) {
+          cls += ' has-value';
+          if (val === max) {
+            cls += ' is-best';
+          }
+        }
+        col.className = cls;
+        col.style.height = `${Math.max((val / scaleMax) * 100, 2)}%`;
         col.title = `${i}.: ${formatKc(val)}`;
         chart.appendChild(col);
       }
@@ -1360,7 +1396,6 @@
       }
     };
 
-    // --- OPRAVA STATISTIK: Seskupení podle normalizovaného názvu služby ---
     async function renderStats() {
       const entries = await storage.getAllEntries();
       const current = entries.filter(e => e.monthKey === currentMonthKey);
@@ -1369,7 +1404,6 @@
 
       const typeMap = {};
       current.forEach(e => {
-        // Seskupujeme podle čistého názvu (odstranění mezer a diakritiky), aby se nespojovaly odlišné položky, ale sloučily stejné
         const normKey = (e.serviceTypeName || 'Služba').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         if (!typeMap[normKey]) {
           typeMap[normKey] = {
