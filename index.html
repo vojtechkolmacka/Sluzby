@@ -417,7 +417,7 @@
   </div>
 
   <div class="container">
-    <!-- 1. POHLED: PŘEHLED -->
+    <!-- PŘEHLED -->
     <section id="view-overview" class="view-section">
       <div id="goal-card" class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -479,7 +479,7 @@
       </div>
     </section>
 
-    <!-- 2. POHLED: ZAPSAT SLUŽBU -->
+    <!-- ZAPSAT SLUŽBU -->
     <section id="view-add" class="view-section hidden">
       <div class="card">
         <h2 id="form-heading" style="font-size:1.15rem; margin-bottom:14px;">Zapsat novou službu</h2>
@@ -516,25 +516,25 @@
       </div>
     </section>
 
-    <!-- 3. POHLED: DNY V MĚSÍCI -->
+    <!-- DNY V MĚSÍCI -->
     <section id="view-daily" class="view-section hidden">
       <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
-        Klepnutím na štítek dne (např. Sobota / Volno) můžete změnit pracovní váhu dne pro výpočet cíle.
+        Klepnutím na štítek dne můžete přepínat mezi: Svátek/Volno (0), Půlden (0.5) a Pracovní den (1).
       </div>
       <div id="daily-list"></div>
     </section>
 
-    <!-- 4. POHLED: STATISTIKY -->
+    <!-- STATISTIKY -->
     <section id="view-stats" class="view-section hidden">
       <div id="stats-content"></div>
     </section>
 
-    <!-- 5. POHLED: NASTAVENÍ A ZÁLOHY -->
+    <!-- NASTAVENÍ A ZÁLOHY -->
     <section id="view-settings" class="view-section hidden">
       <div class="card">
         <div class="card-title">Záloha a obnova dat</div>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
-          Veškerá data jsou bezpečně uložena v tomto zařízení v IndexedDB.
+          Veškerá data jsou bezpečně uložena přímo v prohlížeči.
         </p>
         <button id="btn-export-json" class="btn btn-secondary" style="margin-bottom:8px;">Stáhnout zálohu (JSON)</button>
         <button id="btn-export-csv" class="btn btn-secondary" style="margin-bottom:8px;">Exportovat pro Excel (CSV)</button>
@@ -576,7 +576,6 @@
   </nav>
 
   <script>
-    // --- IndexedDB Vrstva ---
     const DB_NAME = 'KolobeznikSluzbyDB';
     const DB_VERSION = 2;
 
@@ -723,15 +722,6 @@
         });
       }
 
-      async getAllMonthMeta() {
-        return new Promise((res, rej) => {
-          const tx = this.db.transaction('monthMeta', 'readonly');
-          const req = tx.objectStore('monthMeta').getAll();
-          req.onsuccess = () => res(req.result || []);
-          req.onerror = () => rej(req.error);
-        });
-      }
-
       async setMonthGoal(monthKey, goalHalere) {
         const meta = await this.getMonthMeta(monthKey);
         meta.goalHalere = Math.round(Number(goalHalere) || 0);
@@ -815,38 +805,106 @@
       async exportAllData() {
         const entries = await this.getAllEntries();
         const serviceTypes = await this.getAllServiceTypes();
-        const monthMeta = await this.getAllMonthMeta();
+        const monthMeta = await new Promise((res) => {
+          const tx = this.db.transaction('monthMeta', 'readonly');
+          tx.objectStore('monthMeta').getAll().onsuccess = (e) => res(e.target.result || []);
+        });
+        const daysConfig = await new Promise((res) => {
+          const tx = this.db.transaction('daysConfig', 'readonly');
+          tx.objectStore('daysConfig').getAll().onsuccess = (e) => res(e.target.result || []);
+        });
+
         return {
-          appName: 'Koloběžníkovy služby',
-          formatVersion: 2,
-          createdAt: new Date().toISOString(),
-          data: { entries, serviceTypes, monthMeta }
+          version: '2.0',
+          appName: 'KolobeznikovySluzby',
+          exportedAt: new Date().toISOString(),
+          data: { entries, serviceTypes, monthMeta, daysConfig }
         };
       }
 
+      // UNIVERZÁLNÍ IMPORT: Podporuje novou i starší zálohu (records, targets, holidays)
       async importData(importedJson, mode = 'merge') {
-        if (!importedJson || !importedJson.data || !Array.isArray(importedJson.data.entries)) {
-          throw new Error('Neplatný soubor');
+        let normalizedEntries = [];
+        let normalizedGoals = {};
+        let normalizedHolidays = [];
+        let normalizedTypes = [];
+
+        // 1. Zjištění formátu souboru
+        if (Array.isArray(importedJson.records)) {
+          // STARŠÍ FORMÁT ZÁLOHY
+          importedJson.records.forEach(r => {
+            normalizedEntries.push({
+              id: r.id || 'e_' + Math.random().toString(36).substring(2, 8),
+              date: r.date,
+              time: r.createdAt ? new Date(r.createdAt).toLocaleTimeString('cs-CZ') : '',
+              serviceTypeId: (r.type || '').toLowerCase().replace(/\s+/g, '_'),
+              serviceTypeName: r.type,
+              amountHalere: Math.round((Number(r.amount) || 0) * 100),
+              note: r.note || '',
+              monthKey: (r.date || '').substring(0, 7)
+            });
+          });
+
+          if (importedJson.targets) normalizedGoals = importedJson.targets;
+          if (Array.isArray(importedJson.holidays)) normalizedHolidays = importedJson.holidays;
+          if (Array.isArray(importedJson.customTypes)) normalizedTypes = importedJson.customTypes;
+        } else if (importedJson.data && Array.isArray(importedJson.data.entries)) {
+          // NOVÝ FORMÁT ZÁLOHY
+          normalizedEntries = importedJson.data.entries;
+          if (Array.isArray(importedJson.data.monthMeta)) {
+            importedJson.data.monthMeta.forEach(m => { normalizedGoals[m.monthKey] = m.goalHalere / 100; });
+          }
+          if (Array.isArray(importedJson.data.serviceTypes)) normalizedTypes = importedJson.data.serviceTypes;
+        } else {
+          throw new Error('Nerozpoznaný formát záložního souboru.');
         }
-        const { entries, serviceTypes, monthMeta } = importedJson.data;
+
         return new Promise((res, rej) => {
-          const tx = this.db.transaction(['entries', 'serviceTypes', 'monthMeta'], 'readwrite');
+          const tx = this.db.transaction(['entries', 'serviceTypes', 'monthMeta', 'daysConfig'], 'readwrite');
           tx.oncomplete = () => res();
           tx.onerror = () => rej(tx.error);
 
           const entryStore = tx.objectStore('entries');
           const typeStore = tx.objectStore('serviceTypes');
           const metaStore = tx.objectStore('monthMeta');
+          const daysStore = tx.objectStore('daysConfig');
 
           if (mode === 'replace') {
             entryStore.clear();
             typeStore.clear();
             metaStore.clear();
+            daysStore.clear();
           }
 
-          if (Array.isArray(serviceTypes)) serviceTypes.forEach(t => typeStore.put(t));
-          if (Array.isArray(monthMeta)) monthMeta.forEach(m => metaStore.put(m));
-          entries.forEach(e => entryStore.put(e));
+          // Uložení záznamů
+          normalizedEntries.forEach(e => entryStore.put(e));
+
+          // Uložení cílů
+          for (const [mKey, goalVal] of Object.entries(normalizedGoals)) {
+            metaStore.put({
+              monthKey: mKey,
+              goalHalere: Math.round(Number(goalVal) * 100),
+              isClosed: false
+            });
+          }
+
+          // Uložení svátků/volných dnů
+          normalizedHolidays.forEach(dStr => {
+            daysStore.put({
+              date: dStr,
+              monthKey: dStr.substring(0, 7),
+              workWeight: 0
+            });
+          });
+
+          // Uložení typů
+          normalizedTypes.forEach(t => {
+            if (typeof t === 'string') {
+              typeStore.put({ id: 'custom_' + t, name: t, active: true, order: 99 });
+            } else {
+              typeStore.put(t);
+            }
+          });
         });
       }
     }
@@ -996,7 +1054,6 @@
       document.getElementById('stat-active-days').textContent = activeDays;
       document.getElementById('stat-avg-day').textContent = `Průměr: ${formatKc(avgPerDay)}/den`;
 
-      // Stav měsíce
       const badge = document.getElementById('month-status-badge');
       const btnToggle = document.getElementById('btn-toggle-close');
       badge.textContent = meta.isClosed ? 'Uzavřeno' : 'Otevřeno';
@@ -1386,12 +1443,17 @@
       r.onload = async (ev) => {
         try {
           const json = JSON.parse(ev.target.result);
-          await storage.importData(json, 'merge');
+          const isMerge = confirm(
+            'Způsob obnovy dat:\n\n' +
+            'OK = Sloučit se stávajícími daty\n' +
+            'STORNO = Úplně nahradit (přepíše stávající)'
+          );
+          await storage.importData(json, isMerge ? 'merge' : 'replace');
           await refreshTypesDropdown();
           await renderCurrentView();
-          alert('Data úspěšně obnovena.');
+          alert('Data byla úspěšně obnovena!');
         } catch (err) {
-          alert('Chyba: ' + err.message);
+          alert('Chyba při obnově: ' + err.message);
         } finally {
           e.target.value = '';
         }
