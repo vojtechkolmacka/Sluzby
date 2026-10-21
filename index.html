@@ -5,13 +5,404 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#161b22">
   <meta name="description" content="Koloběžníkovy služby - Evidence prodaných služeb Datart">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/app.css">
   <title>Koloběžníkovy služby</title>
+  <style>
+    :root {
+      --bg-main: #0d1117;
+      --bg-card: #161b22;
+      --bg-card-hover: #21262d;
+      --border: #30363d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --primary: #238636;
+      --accent: #58a6ff;
+      --accent-gold: #f59f00;
+      --danger: #da3633;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --nav-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 16px;
+      line-height: 1.5;
+      padding-bottom: calc(var(--nav-height) + 20px);
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .month-selector-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .month-selector-bar button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--accent-gold);
+      font-size: 1.2rem;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .month-display {
+      font-weight: 600;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-huge {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .stat-item {
+      background-color: var(--bg-card);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .progress-track {
+      background-color: var(--bg-main);
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      background-color: var(--accent-gold);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-fill.overachieved {
+      background-color: #2ea043;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-card-hover);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: #fff;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      width: auto;
+    }
+
+    .day-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .day-header {
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .day-header.empty {
+      opacity: 0.75;
+    }
+
+    .day-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .badge-day-holiday {
+      background: rgba(218, 54, 51, 0.2);
+      color: #ff7b72;
+      border-color: rgba(218, 54, 51, 0.4);
+    }
+
+    .badge-day-half {
+      background: rgba(88, 166, 255, 0.15);
+      color: #58a6ff;
+      border-color: rgba(88, 166, 255, 0.3);
+    }
+
+    .badge-day-sunday {
+      background: rgba(139, 148, 158, 0.15);
+      color: var(--text-muted);
+    }
+
+    .entry-item {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background-color: var(--bg-main);
+    }
+
+    .entry-type {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .entry-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .entry-amount {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      text-align: right;
+    }
+
+    .entry-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      justify-content: flex-end;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      background-color: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      gap: 4px;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    .nav-item.active {
+      color: var(--accent-gold);
+    }
+
+    .nav-icon {
+      font-size: 1.25rem;
+    }
+
+    .toast {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--accent-gold);
+      color: #000;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 20px;
+      z-index: 300;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 120px;
+      padding-top: 15px;
+      margin-top: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bar-col {
+      flex: 1;
+      background: var(--border);
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+    }
+
+    .bar-col.has-value {
+      background: var(--accent-gold);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    .badge.closed {
+      background: rgba(218, 54, 51, 0.2);
+      color: #ff7b72;
+      border-color: var(--danger);
+    }
+
+    .badge.open {
+      background: rgba(35, 134, 54, 0.2);
+      color: #7ee787;
+      border-color: var(--primary);
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Horní lišta s názvem a stavem -->
   <header>
     <div class="brand-title">
       <span>⚡</span> Koloběžníkovy služby
@@ -19,7 +410,6 @@
     <span id="month-status-badge" class="badge open">Otevřeno</span>
   </header>
 
-  <!-- Výběr měsíce -->
   <div class="month-selector-bar">
     <button id="btn-prev-month" aria-label="Předchozí měsíc">◀</button>
     <div id="current-month-label" class="month-display">Načítání...</div>
@@ -29,7 +419,6 @@
   <div class="container">
     <!-- 1. POHLED: PŘEHLED -->
     <section id="view-overview" class="view-section">
-      <!-- Karta Měsíční cíl a potřebný průměr -->
       <div id="goal-card" class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span class="card-title" style="margin:0;">MĚSÍČNÍ CÍL</span>
@@ -47,13 +436,12 @@
           <span id="goal-diff-val">Zbývá: 0 Kč</span>
         </div>
 
-        <!-- Box se zbývajícími dny do konce měsíce -->
         <div style="background:var(--bg-main); padding:10px 12px; border-radius:8px; margin-top:12px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
           <span style="color:var(--text-muted); font-size:0.85rem;">Do konce měsíce:</span>
           <strong id="remaining-days-info" style="color:#f59f00; font-size:0.95rem;">-</strong>
         </div>
 
-        <!-- Potřebný denní průměr VČETNĚ DNEŠKA -->
+        <!-- Výpočet včetně dneška -->
         <div style="margin-top:14px; background:rgba(88, 166, 255, 0.05); padding:12px; border-radius:8px; border:1px solid rgba(88, 166, 255, 0.2);">
           <div style="color:var(--text-muted); font-size:0.82rem;">Potřebný denní průměr pro splnění (včetně dneška):</div>
           <div id="required-daily-avg" style="font-size:1.6rem; font-weight:700; color:var(--accent); margin:4px 0;">0 Kč / den</div>
@@ -68,7 +456,6 @@
         </div>
       </div>
 
-      <!-- Karta dnešních tržeb a aktivních dnů -->
       <div class="stat-grid" style="margin-top:0; margin-bottom:16px;">
         <div class="stat-item">
           <div class="stat-label">DNES PRODÁNO</div>
@@ -109,7 +496,6 @@
             <select id="entry-service-type" required></select>
           </div>
 
-          <!-- Skryté pole při volbě nové vlastní služby -->
           <div id="new-type-group" class="form-group hidden">
             <label for="new-type-name">Název nové kategorie</label>
             <input type="text" id="new-type-name" placeholder="Např. Kalibrace TV">
@@ -143,13 +529,7 @@
       <div id="stats-content"></div>
     </section>
 
-    <!-- 5. POHLED: HISTORIE -->
-    <section id="view-history" class="view-section hidden">
-      <div class="card-title" style="margin-bottom:10px;">Všechna zaznamenaná období</div>
-      <div id="history-list"></div>
-    </section>
-
-    <!-- 6. POHLED: NASTAVENÍ A ZÁLOHY -->
+    <!-- 5. POHLED: NASTAVENÍ A ZÁLOHY -->
     <section id="view-settings" class="view-section hidden">
       <div class="card">
         <div class="card-title">Záloha a obnova dat</div>
@@ -167,19 +547,11 @@
         <div id="types-management-list"></div>
         <button id="btn-restore-types" class="btn btn-secondary btn-sm" style="margin-top:12px;">Obnovit výchozí typy Datart</button>
       </div>
-
-      <div class="card">
-        <div class="card-title">Diagnostika a testy</div>
-        <button id="btn-run-tests" class="btn btn-secondary btn-sm" onclick="runAutomatedTests()">Spustit vnitřní testy (18 scénářů)</button>
-        <div id="test-results-log" style="font-family:monospace; font-size:0.75rem; margin-top:8px; white-space:pre-wrap; color:var(--text-muted);"></div>
-      </div>
     </section>
   </div>
 
-  <!-- Plovoucí Toast notifikace -->
   <div id="toast" class="toast">Hotovo</div>
 
-  <!-- Spodní fixní navigace -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-view="view-overview">
       <span class="nav-icon">📊</span>
@@ -203,8 +575,841 @@
     </button>
   </nav>
 
-  <script src="js/db.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/tests.js"></script>
+  <script>
+    // --- IndexedDB Vrstva ---
+    const DB_NAME = 'KolobeznikSluzbyDB';
+    const DB_VERSION = 2;
+
+    const DEFAULT_SERVICE_TYPES = [
+      { id: 'bleskovka', name: 'Bleskovka', order: 1, active: true, isDefault: true },
+      { id: 'delsi_zaruka', name: 'Delší záruka', order: 2, active: true, isDefault: true },
+      { id: 'nahodile_poskozeni', name: 'Nahodilé poškození', order: 3, active: true, isDefault: true },
+      { id: 'doprava', name: 'Doprava', order: 4, active: true, isDefault: true },
+      { id: 'instalace', name: 'Instalace', order: 5, active: true, isDefault: true },
+      { id: 'instalace_tv', name: 'Instalace TV na stěnu', order: 6, active: true, isDefault: true },
+      { id: 'instalace_pc', name: 'Instalace počítače', order: 7, active: true, isDefault: true }
+    ];
+
+    class StorageService {
+      constructor() { this.db = null; }
+
+      async init() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('entries')) {
+              const store = db.createObjectStore('entries', { keyPath: 'id' });
+              store.createIndex('date', 'date', { unique: false });
+              store.createIndex('monthKey', 'monthKey', { unique: false });
+              store.createIndex('serviceTypeId', 'serviceTypeId', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('serviceTypes')) {
+              const store = db.createObjectStore('serviceTypes', { keyPath: 'id' });
+              store.createIndex('order', 'order', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('monthMeta')) {
+              db.createObjectStore('monthMeta', { keyPath: 'monthKey' });
+            }
+            if (!db.objectStoreNames.contains('settings')) {
+              db.createObjectStore('settings', { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains('daysConfig')) {
+              const dStore = db.createObjectStore('daysConfig', { keyPath: 'date' });
+              dStore.createIndex('monthKey', 'monthKey', { unique: false });
+            }
+          };
+          req.onsuccess = async (e) => {
+            this.db = e.target.result;
+            await this._seedInitialTypes();
+            resolve(this.db);
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async _seedInitialTypes() {
+        const types = await this.getAllServiceTypes();
+        if (types.length === 0) {
+          const tx = this.db.transaction('serviceTypes', 'readwrite');
+          const store = tx.objectStore('serviceTypes');
+          DEFAULT_SERVICE_TYPES.forEach(t => store.put(t));
+          return new Promise(res => tx.oncomplete = () => res());
+        }
+      }
+
+      async addEntry(entry) {
+        entry.monthKey = entry.date.substring(0, 7);
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('entries', 'readwrite');
+          const req = tx.objectStore('entries').add(entry);
+          req.onsuccess = () => res(entry);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async updateEntry(entry) {
+        entry.monthKey = entry.date.substring(0, 7);
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('entries', 'readwrite');
+          const req = tx.objectStore('entries').put(entry);
+          req.onsuccess = () => res(entry);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async deleteEntry(id) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('entries', 'readwrite');
+          const req = tx.objectStore('entries').delete(id);
+          req.onsuccess = () => res(true);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getEntriesByMonth(monthKey) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('entries', 'readonly');
+          const req = tx.objectStore('entries').index('monthKey').getAll(IDBKeyRange.only(monthKey));
+          req.onsuccess = () => res(req.result || []);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getAllEntries() {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('entries', 'readonly');
+          const req = tx.objectStore('entries').getAll();
+          req.onsuccess = () => res(req.result || []);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getAllServiceTypes() {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('serviceTypes', 'readonly');
+          const req = tx.objectStore('serviceTypes').getAll();
+          req.onsuccess = () => {
+            const list = req.result || [];
+            list.sort((a, b) => a.order - b.order);
+            res(list);
+          };
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async saveServiceType(st) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('serviceTypes', 'readwrite');
+          const req = tx.objectStore('serviceTypes').put(st);
+          req.onsuccess = () => res(st);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async restoreDefaultServiceTypes() {
+        const tx = this.db.transaction('serviceTypes', 'readwrite');
+        const store = tx.objectStore('serviceTypes');
+        DEFAULT_SERVICE_TYPES.forEach(t => store.put(t));
+        return new Promise(res => tx.oncomplete = () => res());
+      }
+
+      async getMonthMeta(monthKey) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('monthMeta', 'readonly');
+          const req = tx.objectStore('monthMeta').get(monthKey);
+          req.onsuccess = () => res(req.result || { monthKey, goalHalere: 0, isClosed: false });
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getAllMonthMeta() {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('monthMeta', 'readonly');
+          const req = tx.objectStore('monthMeta').getAll();
+          req.onsuccess = () => res(req.result || []);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async setMonthGoal(monthKey, goalHalere) {
+        const meta = await this.getMonthMeta(monthKey);
+        meta.goalHalere = Math.round(Number(goalHalere) || 0);
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('monthMeta', 'readwrite');
+          const req = tx.objectStore('monthMeta').put(meta);
+          req.onsuccess = () => res(meta);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async setMonthStatus(monthKey, isClosed) {
+        const meta = await this.getMonthMeta(monthKey);
+        meta.isClosed = Boolean(isClosed);
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('monthMeta', 'readwrite');
+          const req = tx.objectStore('monthMeta').put(meta);
+          req.onsuccess = () => res(meta);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getDayConfig(dateStr) {
+        return new Promise((res) => {
+          const tx = this.db.transaction('daysConfig', 'readonly');
+          const req = tx.objectStore('daysConfig').get(dateStr);
+          req.onsuccess = () => res(req.result || null);
+          req.onerror = () => res(null);
+        });
+      }
+
+      async getAllDaysConfig(monthKey) {
+        return new Promise((res) => {
+          const tx = this.db.transaction('daysConfig', 'readonly');
+          const req = tx.objectStore('daysConfig').index('monthKey').getAll(IDBKeyRange.only(monthKey));
+          req.onsuccess = () => {
+            const map = {};
+            (req.result || []).forEach(c => { map[c.date] = c; });
+            res(map);
+          };
+          req.onerror = () => res({});
+        });
+      }
+
+      async saveDayConfig(dayConfig) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('daysConfig', 'readwrite');
+          const req = tx.objectStore('daysConfig').put(dayConfig);
+          req.onsuccess = () => res(dayConfig);
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async removeDayConfig(dateStr) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('daysConfig', 'readwrite');
+          const req = tx.objectStore('daysConfig').delete(dateStr);
+          req.onsuccess = () => res();
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async getSetting(key, defVal = null) {
+        return new Promise(res => {
+          const tx = this.db.transaction('settings', 'readonly');
+          const req = tx.objectStore('settings').get(key);
+          req.onsuccess = () => res(req.result ? req.result.value : defVal);
+          req.onerror = () => res(defVal);
+        });
+      }
+
+      async setSetting(key, value) {
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction('settings', 'readwrite');
+          const req = tx.objectStore('settings').put({ key, value });
+          req.onsuccess = () => res();
+          req.onerror = () => rej(req.error);
+        });
+      }
+
+      async exportAllData() {
+        const entries = await this.getAllEntries();
+        const serviceTypes = await this.getAllServiceTypes();
+        const monthMeta = await this.getAllMonthMeta();
+        return {
+          appName: 'Koloběžníkovy služby',
+          formatVersion: 2,
+          createdAt: new Date().toISOString(),
+          data: { entries, serviceTypes, monthMeta }
+        };
+      }
+
+      async importData(importedJson, mode = 'merge') {
+        if (!importedJson || !importedJson.data || !Array.isArray(importedJson.data.entries)) {
+          throw new Error('Neplatný soubor');
+        }
+        const { entries, serviceTypes, monthMeta } = importedJson.data;
+        return new Promise((res, rej) => {
+          const tx = this.db.transaction(['entries', 'serviceTypes', 'monthMeta'], 'readwrite');
+          tx.oncomplete = () => res();
+          tx.onerror = () => rej(tx.error);
+
+          const entryStore = tx.objectStore('entries');
+          const typeStore = tx.objectStore('serviceTypes');
+          const metaStore = tx.objectStore('monthMeta');
+
+          if (mode === 'replace') {
+            entryStore.clear();
+            typeStore.clear();
+            metaStore.clear();
+          }
+
+          if (Array.isArray(serviceTypes)) serviceTypes.forEach(t => typeStore.put(t));
+          if (Array.isArray(monthMeta)) monthMeta.forEach(m => metaStore.put(m));
+          entries.forEach(e => entryStore.put(e));
+        });
+      }
+    }
+
+    const storage = new StorageService();
+
+    // --- Aplikační Logika ---
+    let currentMonthKey = '';
+    let cachedTypes = [];
+    let isSaving = false;
+
+    function formatKc(amountHalere) {
+      const kc = Math.round((Number(amountHalere) || 0) / 100);
+      return kc.toLocaleString('cs-CZ') + ' Kč';
+    }
+
+    function getTodayString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function getMonthNameCz(idx) {
+      const names = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+      return names[idx];
+    }
+
+    function formatMonthLabel(mKey) {
+      const [y, m] = mKey.split('-');
+      return `${getMonthNameCz(parseInt(m, 10) - 1)} ${y}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await storage.init();
+      const today = getTodayString();
+      currentMonthKey = today.substring(0, 7);
+      document.getElementById('entry-date').value = today;
+
+      setupEventListeners();
+      await refreshTypesDropdown();
+      await renderCurrentView();
+    });
+
+    function setupEventListeners() {
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+
+          btn.classList.add('active');
+          const target = btn.getAttribute('data-view');
+          document.getElementById(target).classList.remove('hidden');
+          renderCurrentView();
+        });
+      });
+
+      document.getElementById('btn-quick-add').addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+        document.querySelector('.nav-item[data-view="view-add"]').classList.add('active');
+        document.getElementById('view-add').classList.remove('hidden');
+        document.getElementById('entry-date').value = getTodayString();
+      });
+
+      document.getElementById('btn-prev-month').addEventListener('click', () => changeMonth(-1));
+      document.getElementById('btn-next-month').addEventListener('click', () => changeMonth(1));
+
+      document.getElementById('entry-service-type').addEventListener('change', (e) => {
+        document.getElementById('new-type-group').classList.toggle('hidden', e.target.value !== '__NEW__');
+      });
+
+      document.getElementById('form-add-entry').addEventListener('submit', handleEntrySubmit);
+      document.getElementById('btn-set-goal').addEventListener('click', promptSetGoal);
+      document.getElementById('btn-toggle-close').addEventListener('click', toggleMonthClosed);
+
+      document.getElementById('btn-export-json').addEventListener('click', exportJson);
+      document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
+      document.getElementById('btn-import-json').addEventListener('click', () => document.getElementById('file-import-input').click());
+      document.getElementById('file-import-input').addEventListener('change', handleFileImport);
+    }
+
+    function changeMonth(delta) {
+      const [y, m] = currentMonthKey.split('-').map(Number);
+      const nd = new Date(y, m - 1 + delta, 1);
+      currentMonthKey = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}`;
+      renderCurrentView();
+    }
+
+    async function renderCurrentView() {
+      document.getElementById('current-month-label').textContent = formatMonthLabel(currentMonthKey);
+      const activeNav = document.querySelector('.nav-item.active').getAttribute('data-view');
+      if (activeNav === 'view-overview') await renderOverview();
+      else if (activeNav === 'view-daily') await renderDaily();
+      else if (activeNav === 'view-stats') await renderStats();
+      else if (activeNav === 'view-settings') await renderSettings();
+    }
+
+    async function refreshTypesDropdown(selectId = 'entry-service-type', selectedVal = null) {
+      cachedTypes = await storage.getAllServiceTypes();
+      const select = document.getElementById(selectId);
+      select.innerHTML = '';
+
+      cachedTypes.filter(t => t.active).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name;
+        select.appendChild(opt);
+      });
+
+      const newOpt = document.createElement('option');
+      newOpt.value = '__NEW__';
+      newOpt.textContent = '+ Vlastní typ služby...';
+      select.appendChild(newOpt);
+
+      if (selectedVal) {
+        select.value = selectedVal;
+      } else {
+        const last = await storage.getSetting('lastUsedTypeId');
+        if (last && cachedTypes.some(t => t.id === last && t.active)) select.value = last;
+      }
+    }
+
+    async function renderOverview() {
+      const entries = await storage.getEntriesByMonth(currentMonthKey);
+      const meta = await storage.getMonthMeta(currentMonthKey);
+      const daysConfigMap = await storage.getAllDaysConfig(currentMonthKey);
+
+      let totalHalere = 0, todayHalere = 0, todayCount = 0;
+      const daysSet = new Set(), dayTotals = {};
+      const todayStr = getTodayString();
+
+      for (const e of entries) {
+        totalHalere += e.amountHalere;
+        daysSet.add(e.date);
+        dayTotals[e.date] = (dayTotals[e.date] || 0) + e.amountHalere;
+        if (e.date === todayStr) {
+          todayHalere += e.amountHalere;
+          todayCount++;
+        }
+      }
+
+      const activeDays = daysSet.size;
+      const avgPerDay = activeDays > 0 ? totalHalere / activeDays : 0;
+
+      document.getElementById('stat-total-amount').textContent = formatKc(totalHalere);
+      document.getElementById('stat-today-amount').textContent = formatKc(todayHalere);
+      document.getElementById('stat-today-count').textContent = `${todayCount} služeb`;
+      document.getElementById('stat-active-days').textContent = activeDays;
+      document.getElementById('stat-avg-day').textContent = `Průměr: ${formatKc(avgPerDay)}/den`;
+
+      // Stav měsíce
+      const badge = document.getElementById('month-status-badge');
+      const btnToggle = document.getElementById('btn-toggle-close');
+      badge.textContent = meta.isClosed ? 'Uzavřeno' : 'Otevřeno';
+      badge.className = `badge ${meta.isClosed ? 'closed' : 'open'}`;
+      btnToggle.textContent = meta.isClosed ? 'Znovu otevřít měsíc' : 'Uzavřít měsíc';
+
+      // Cíl a průměr VČETNĚ DNEŠKA
+      const goalHalere = meta.goalHalere || 0;
+      document.getElementById('goal-target-val').textContent = formatKc(goalHalere);
+
+      if (goalHalere > 0) {
+        const pct = Math.round((totalHalere / goalHalere) * 100);
+        const remaining = Math.max(0, goalHalere - totalHalere);
+
+        document.getElementById('goal-pct-val').textContent = `${pct} %`;
+        document.getElementById('goal-diff-val').textContent = goalHalere >= totalHalere
+          ? `Zbývá: ${formatKc(remaining)}`
+          : `Překročeno o ${formatKc(totalHalere - goalHalere)}`;
+
+        const bar = document.getElementById('goal-progress-bar');
+        bar.style.width = `${Math.min(pct, 100)}%`;
+        bar.classList.toggle('overachieved', pct >= 100);
+
+        const [y, m] = currentMonthKey.split('-').map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        let remCal = 0, remWork = 0;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dStr = `${currentMonthKey}-${String(d).padStart(2, '0')}`;
+          if (dStr >= todayStr) {
+            remCal++;
+            const uCfg = daysConfigMap[dStr];
+            if (uCfg && typeof uCfg.workWeight === 'number') {
+              remWork += uCfg.workWeight;
+            } else {
+              const dow = new Date(y, m - 1, d).getDay();
+              if (dStr.endsWith('-10-28')) remWork += 0;
+              else if (dow >= 1 && dow <= 5) remWork += 1.0;
+              else if (dow === 6) remWork += 0.5;
+              else remWork += 0.0;
+            }
+          }
+        }
+
+        document.getElementById('remaining-days-info').textContent = `${remCal} dní (${remWork} prac.)`;
+        const reqAvg = remWork > 0 ? Math.round(remaining / remWork) : 0;
+        document.getElementById('required-daily-avg').textContent = `${formatKc(reqAvg)} / den`;
+        document.getElementById('required-avg-note').textContent = `Zbývá ${remWork} prac. dní včetně dneška (Po–Pá = 1, So = 0.5, Ne/svátky = 0).`;
+      } else {
+        document.getElementById('goal-pct-val').textContent = '0 %';
+        document.getElementById('goal-diff-val').textContent = 'Cíl nenastaven';
+        document.getElementById('goal-progress-bar').style.width = '0%';
+        document.getElementById('remaining-days-info').textContent = '-';
+        document.getElementById('required-daily-avg').textContent = '0 Kč / den';
+        document.getElementById('required-avg-note').textContent = 'Nejprve nastavte měsíční cíl.';
+      }
+
+      renderOverviewChart(dayTotals);
+    }
+
+    function renderOverviewChart(dayTotals) {
+      const chart = document.getElementById('overview-chart');
+      chart.innerHTML = '';
+      const [y, m] = currentMonthKey.split('-').map(Number);
+      const days = new Date(y, m, 0).getDate();
+
+      let max = 1;
+      for (let i = 1; i <= days; i++) {
+        const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
+        if ((dayTotals[dStr] || 0) > max) max = dayTotals[dStr];
+      }
+
+      for (let i = 1; i <= days; i++) {
+        const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
+        const val = dayTotals[dStr] || 0;
+        const col = document.createElement('div');
+        col.className = 'bar-col' + (val > 0 ? ' has-value' : '');
+        col.style.height = `${Math.max((val / max) * 100, 2)}%`;
+        col.title = `${i}.: ${formatKc(val)}`;
+        chart.appendChild(col);
+      }
+    }
+
+    async function renderDaily() {
+      const container = document.getElementById('daily-list');
+      container.innerHTML = '';
+
+      const entries = await storage.getEntriesByMonth(currentMonthKey);
+      const daysConfigMap = await storage.getAllDaysConfig(currentMonthKey);
+      const [y, m] = currentMonthKey.split('-').map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+
+      const map = {};
+      for (let i = 1; i <= daysInMonth; i++) map[`${currentMonthKey}-${String(i).padStart(2, '0')}`] = [];
+      entries.forEach(e => { if (map[e.date]) map[e.date].push(e); });
+
+      const daysCz = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
+      const todayStr = getTodayString();
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
+        const dayEntries = map[dStr];
+        const dow = new Date(y, m - 1, i).getDay();
+        const total = dayEntries.reduce((a, b) => a + b.amountHalere, 0);
+
+        const uCfg = daysConfigMap[dStr];
+        let label = '', lClass = '';
+
+        if (uCfg && typeof uCfg.workWeight === 'number') {
+          if (uCfg.workWeight === 0) { label = 'Svátek / Volno'; lClass = 'badge-day-holiday'; }
+          else if (uCfg.workWeight === 0.5) { label = 'Sobota (0.5 dne)'; lClass = 'badge-day-half'; }
+          else { label = 'Pracovní (1 den)'; }
+        } else {
+          if (dStr.endsWith('-10-28')) { label = 'Svátek / Volno'; lClass = 'badge-day-holiday'; }
+          else if (dow === 0) { label = 'Neděle'; lClass = 'badge-day-sunday'; }
+          else if (dow === 6) { label = 'Sobota (0.5 dne)'; lClass = 'badge-day-half'; }
+        }
+
+        const card = document.createElement('div');
+        card.className = 'day-card';
+        if (dStr === todayStr) card.style.borderColor = 'var(--accent)';
+
+        card.innerHTML = `
+          <div class="day-header ${dayEntries.length === 0 ? 'empty' : ''}">
+            <div>
+              <strong>${i}. ${daysCz[dow]}</strong>
+              <span style="font-size:0.8rem; color:var(--text-muted); margin-left:4px;">(${dayEntries.length})</span>
+              ${label ? `<div class="day-badge ${lClass}" onclick="event.stopPropagation(); toggleDayType('${dStr}')">${label}</div>` : `<div class="day-badge" onclick="event.stopPropagation(); toggleDayType('${dStr}')" style="opacity:0.4;">+ Upravit volno</div>`}
+            </div>
+            <strong style="color:${total > 0 ? '#f59f00' : 'var(--text-muted)'}">${total > 0 ? formatKc(total) : '—'}</strong>
+          </div>
+          <div class="day-body ${dStr === todayStr ? '' : 'hidden'}">
+            ${dayEntries.length === 0 ? '<div style="padding:10px 14px; font-size:0.85rem; color:var(--text-muted);">Žádné zapsané služby v tento den.</div>' : ''}
+          </div>
+        `;
+
+        const body = card.querySelector('.day-body');
+        dayEntries.forEach(e => {
+          const item = document.createElement('div');
+          item.className = 'entry-item';
+          item.innerHTML = `
+            <div class="entry-info">
+              <div class="entry-type">${escapeHtml(e.serviceTypeName)}</div>
+              ${e.note ? `<div class="entry-note">${escapeHtml(e.note)}</div>` : ''}
+            </div>
+            <div>
+              <div class="entry-amount">${formatKc(e.amountHalere)}</div>
+              <div class="entry-actions">
+                <button class="btn btn-secondary btn-sm" onclick="startEditEntry('${e.id}')">Upravit</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmDeleteEntry('${e.id}')">Smazat</button>
+              </div>
+            </div>
+          `;
+          body.appendChild(item);
+        });
+
+        card.querySelector('.day-header').addEventListener('click', () => body.classList.toggle('hidden'));
+        container.appendChild(card);
+      }
+    }
+
+    window.toggleDayType = async function(dStr) {
+      const cfg = await storage.getDayConfig(dStr);
+      let weight = 0;
+      if (!cfg || cfg.workWeight === undefined) weight = 0;
+      else if (cfg.workWeight === 0) weight = 0.5;
+      else if (cfg.workWeight === 0.5) weight = 1.0;
+      else {
+        await storage.removeDayConfig(dStr);
+        await renderCurrentView();
+        showToast('Obnovena výchozí hodnota');
+        return;
+      }
+      await storage.saveDayConfig({ date: dStr, monthKey: dStr.substring(0, 7), workWeight: weight });
+      await renderCurrentView();
+      showToast(`Den upraven (${weight} prac. dne)`);
+    };
+
+    async function handleEntrySubmit(e) {
+      e.preventDefault();
+      if (isSaving) return;
+      isSaving = true;
+
+      try {
+        const editId = document.getElementById('edit-entry-id').value;
+        const date = document.getElementById('entry-date').value || getTodayString();
+        let typeId = document.getElementById('entry-service-type').value;
+        const amountKc = parseFloat(document.getElementById('entry-amount').value);
+        const note = document.getElementById('entry-note').value.trim();
+
+        if (isNaN(amountKc) || amountKc < 0) return alert('Zadejte nezápornou částku.');
+        const amountHalere = Math.round(amountKc * 100);
+
+        if (typeId === '__NEW__') {
+          const customName = document.getElementById('new-type-name').value.trim();
+          if (!customName) return alert('Zadejte název služby.');
+          typeId = 'custom_' + Date.now();
+          await storage.saveServiceType({ id: typeId, name: customName, order: cachedTypes.length + 1, active: true });
+          await refreshTypesDropdown('entry-service-type', typeId);
+          document.getElementById('new-type-group').classList.add('hidden');
+          document.getElementById('new-type-name').value = '';
+        }
+
+        const typeObj = cachedTypes.find(t => t.id === typeId) || { name: 'Služba' };
+        const entry = {
+          id: editId || 'e_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          date,
+          serviceTypeId: typeId,
+          serviceTypeName: typeObj.name,
+          amountHalere,
+          note
+        };
+
+        if (editId) {
+          await storage.updateEntry(entry);
+          showToast('Záznam upraven');
+        } else {
+          await storage.addEntry(entry);
+          await storage.setSetting('lastUsedTypeId', typeId);
+          showToast('Služba uložena');
+        }
+
+        document.getElementById('edit-entry-id').value = '';
+        document.getElementById('entry-amount').value = '';
+        document.getElementById('entry-note').value = '';
+        document.getElementById('form-heading').textContent = 'Zapsat novou službu';
+        document.getElementById('btn-submit-entry').textContent = 'Uložit službu';
+
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+        document.querySelector('.nav-item[data-view="view-overview"]').classList.add('active');
+        document.getElementById('view-overview').classList.remove('hidden');
+
+        await renderCurrentView();
+      } finally {
+        isSaving = false;
+      }
+    }
+
+    window.startEditEntry = async function(id) {
+      const entries = await storage.getAllEntries();
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+      document.querySelector('.nav-item[data-view="view-add"]').classList.add('active');
+      document.getElementById('view-add').classList.remove('hidden');
+
+      document.getElementById('form-heading').textContent = 'Upravit záznam služby';
+      document.getElementById('edit-entry-id').value = entry.id;
+      document.getElementById('entry-date').value = entry.date;
+      document.getElementById('entry-amount').value = (entry.amountHalere / 100).toFixed(0);
+      document.getElementById('entry-note').value = entry.note || '';
+
+      await refreshTypesDropdown('entry-service-type', entry.serviceTypeId);
+      document.getElementById('btn-submit-entry').textContent = 'Aktualizovat službu';
+    };
+
+    window.confirmDeleteEntry = async function(id) {
+      if (confirm('Smazat tento záznam?')) {
+        await storage.deleteEntry(id);
+        showToast('Záznam smazán');
+        await renderCurrentView();
+      }
+    };
+
+    async function renderStats() {
+      const entries = await storage.getAllEntries();
+      const current = entries.filter(e => e.monthKey === currentMonthKey);
+      const container = document.getElementById('stats-content');
+      container.innerHTML = '';
+
+      const typeMap = {};
+      current.forEach(e => {
+        if (!typeMap[e.serviceTypeId]) typeMap[e.serviceTypeId] = { name: e.serviceTypeName, total: 0, count: 0 };
+        typeMap[e.serviceTypeId].total += e.amountHalere;
+        typeMap[e.serviceTypeId].count++;
+      });
+
+      const total = current.reduce((a, b) => a + b.amountHalere, 0);
+      let html = `<div class="card"><div class="card-title">Podle služeb (${formatMonthLabel(currentMonthKey)})</div>`;
+
+      Object.values(typeMap).sort((a, b) => b.total - a.total).forEach(t => {
+        const pct = total > 0 ? Math.round((t.total / total) * 100) : 0;
+        html += `
+          <div style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-weight:600;">
+              <span>${escapeHtml(t.name)}</span>
+              <span style="color:#f59f00">${formatKc(t.total)}</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+              <span>Počet: ${t.count} ks (${pct} %)</span>
+              <span>Průměr: ${formatKc(t.total / t.count)}</span>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    async function renderSettings() {
+      const container = document.getElementById('types-management-list');
+      container.innerHTML = '';
+      const types = await storage.getAllServiceTypes();
+
+      types.forEach(t => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);';
+        row.innerHTML = `
+          <div><strong>${escapeHtml(t.name)}</strong> ${!t.active ? '<span style="color:var(--danger); font-size:0.75rem;">(Vypnuto)</span>' : ''}</div>
+          <button class="btn btn-secondary btn-sm" onclick="toggleTypeActive('${t.id}')">${t.active ? 'Vypnout' : 'Zapnout'}</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    window.toggleTypeActive = async function(id) {
+      const types = await storage.getAllServiceTypes();
+      const t = types.find(x => x.id === id);
+      if (!t) return;
+      t.active = !t.active;
+      await storage.saveServiceType(t);
+      await refreshTypesDropdown();
+      await renderSettings();
+      showToast('Stav upraven');
+    };
+
+    document.getElementById('btn-restore-types').addEventListener('click', async () => {
+      if (confirm('Obnovit výchozí typy Datart?')) {
+        await storage.restoreDefaultServiceTypes();
+        await refreshTypesDropdown();
+        await renderSettings();
+        showToast('Obnoveno');
+      }
+    });
+
+    async function promptSetGoal() {
+      const meta = await storage.getMonthMeta(currentMonthKey);
+      const val = prompt(`Měsíční cíl v Kč pro ${formatMonthLabel(currentMonthKey)}:`, meta.goalHalere ? (meta.goalHalere / 100).toFixed(0) : '');
+      if (val !== null) {
+        const kc = parseFloat(val);
+        if (!isNaN(kc) && kc >= 0) {
+          await storage.setMonthGoal(currentMonthKey, Math.round(kc * 100));
+          showToast('Cíl uložen');
+          renderOverview();
+        }
+      }
+    }
+
+    async function toggleMonthClosed() {
+      const meta = await storage.getMonthMeta(currentMonthKey);
+      await storage.setMonthStatus(currentMonthKey, !meta.isClosed);
+      showToast(!meta.isClosed ? 'Měsíc uzavřen' : 'Měsíc otevřen');
+      renderOverview();
+    }
+
+    async function exportJson() {
+      const b = await storage.exportAllData();
+      const blob = new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `sluzby-zaloha-${getTodayString()}.json`;
+      a.click();
+      showToast('Záloha stažena');
+    }
+
+    async function exportCsv() {
+      const entries = await storage.getAllEntries();
+      let csv = '\uFEFFID;Datum;Typ služby;Částka v Kč;Poznámka\r\n';
+      entries.forEach(e => {
+        csv += `"${e.id}";"${e.date}";"${e.serviceTypeName}";"${(e.amountHalere / 100).toFixed(2).replace('.', ',')}";"${(e.note || '').replace(/"/g, '""')}"\r\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `sluzby-export-${getTodayString()}.csv`;
+      a.click();
+      showToast('CSV exportováno');
+    }
+
+    async function handleFileImport(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = async (ev) => {
+        try {
+          const json = JSON.parse(ev.target.result);
+          await storage.importData(json, 'merge');
+          await refreshTypesDropdown();
+          await renderCurrentView();
+          alert('Data úspěšně obnovena.');
+        } catch (err) {
+          alert('Chyba: ' + err.message);
+        } finally {
+          e.target.value = '';
+        }
+      };
+      r.readAsText(f);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
 </body>
 </html>
