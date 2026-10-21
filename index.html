@@ -629,11 +629,10 @@
 
       async _seedInitialTypes() {
         const types = await this.getAllServiceTypes();
-        // Pokud chybí jakýkoliv typ z výchozích, doplní se a aktivuje
         const tx = this.db.transaction('serviceTypes', 'readwrite');
         const store = tx.objectStore('serviceTypes');
         for (const def of DEFAULT_SERVICE_TYPES) {
-          const exists = types.find(t => t.id === def.id);
+          const exists = types.find(t => t.id === def.id || t.name === def.name);
           if (!exists) {
             store.put(def);
           } else if (exists.active === undefined) {
@@ -854,8 +853,9 @@
             halere = Math.round(parseFloat(r.amount) * 100);
           }
 
-          const typeName = r.type || r.serviceTypeName || 'Služba';
-          const typeId = r.serviceTypeId || typeName.toLowerCase().replace(/\s+/g, '_');
+          const typeName = (r.type || r.serviceTypeName || 'Služba').trim();
+          // Normalizace ID
+          const typeId = typeName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
 
           normalizedEntries.push({
             id: r.id || 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -908,9 +908,7 @@
             daysStore.clear();
           }
 
-          // Vždy zajistit přítomnost a aktivitu výchozích typů
           DEFAULT_SERVICE_TYPES.forEach(t => typeStore.put(t));
-
           normalizedEntries.forEach(e => entryStore.put(e));
 
           for (const [mKey, goalVal] of Object.entries(normalizedGoals)) {
@@ -931,7 +929,8 @@
 
           normalizedTypes.forEach(t => {
             if (typeof t === 'string') {
-              typeStore.put({ id: 'custom_' + t, name: t, active: true, order: 99 });
+              const cleanId = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+              typeStore.put({ id: cleanId, name: t, active: true, order: 99 });
             } else if (t && t.id) {
               t.active = true;
               typeStore.put(t);
@@ -943,7 +942,6 @@
 
     const storage = new StorageService();
 
-    // --- Aplikační Logika ---
     let currentMonthKey = '';
     let cachedTypes = [];
     let isSaving = false;
@@ -1034,20 +1032,17 @@
       else if (activeNav === 'view-settings') await renderSettings();
     }
 
-    // Bezpečné sestavení rozbalovacího seznamu služeb
     async function refreshTypesDropdown(selectId = 'entry-service-type', selectedVal = null) {
       cachedTypes = await storage.getAllServiceTypes();
       const select = document.getElementById(selectId);
       if (!select) return;
 
       select.innerHTML = '';
-
-      // Zobrazit všechny typy, které nejsou explicitně vypnuté (false)
       const availableTypes = cachedTypes.filter(t => t.active !== false);
 
       availableTypes.forEach(t => {
         const opt = document.createElement('option');
-        opt.value = t.id;
+        opt.value = t.name; // Ukládáme a párujeme podle názvu pro 100% spolehlivost
         opt.textContent = t.name;
         select.appendChild(opt);
       });
@@ -1060,11 +1055,11 @@
       if (selectedVal) {
         select.value = selectedVal;
       } else {
-        const last = await storage.getSetting('lastUsedTypeId');
-        if (last && availableTypes.some(t => t.id === last)) {
+        const last = await storage.getSetting('lastUsedTypeName');
+        if (last && availableTypes.some(t => t.name === last)) {
           select.value = last;
         } else if (availableTypes.length > 0) {
-          select.value = availableTypes[0].id;
+          select.value = availableTypes[0].name;
         }
       }
     }
@@ -1103,7 +1098,6 @@
       badge.className = `badge ${meta.isClosed ? 'closed' : 'open'}`;
       btnToggle.textContent = meta.isClosed ? 'Znovu otevřít měsíc' : 'Uzavřít měsíc';
 
-      // Cíl a průměr VČETNĚ DNEŠKA
       const goalHalere = meta.goalHalere || 0;
       document.getElementById('goal-target-val').textContent = formatKc(goalHalere);
 
@@ -1283,29 +1277,31 @@
       try {
         const editId = document.getElementById('edit-entry-id').value;
         const date = document.getElementById('entry-date').value || getTodayString();
-        let typeId = document.getElementById('entry-service-type').value;
+        let selectedTypeName = document.getElementById('entry-service-type').value;
         const amountKc = parseFloat(document.getElementById('entry-amount').value);
         const note = document.getElementById('entry-note').value.trim();
 
         if (isNaN(amountKc) || amountKc < 0) return alert('Zadejte nezápornou částku.');
         const amountHalere = Math.round(amountKc * 100);
 
-        if (typeId === '__NEW__') {
+        if (selectedTypeName === '__NEW__') {
           const customName = document.getElementById('new-type-name').value.trim();
           if (!customName) return alert('Zadejte název služby.');
-          typeId = 'custom_' + Date.now();
-          await storage.saveServiceType({ id: typeId, name: customName, order: cachedTypes.length + 1, active: true });
-          await refreshTypesDropdown('entry-service-type', typeId);
+          selectedTypeName = customName;
+          const newId = 'custom_' + Date.now();
+          await storage.saveServiceType({ id: newId, name: customName, order: cachedTypes.length + 1, active: true });
+          await refreshTypesDropdown('entry-service-type', selectedTypeName);
           document.getElementById('new-type-group').classList.add('hidden');
           document.getElementById('new-type-name').value = '';
         }
 
-        const typeObj = cachedTypes.find(t => t.id === typeId) || { name: 'Služba' };
+        const cleanId = selectedTypeName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+
         const entry = {
-          id: editId || 'e_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          id: editId || 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           date,
-          serviceTypeId: typeId,
-          serviceTypeName: typeObj.name,
+          serviceTypeId: cleanId,
+          serviceTypeName: selectedTypeName,
           amountHalere,
           note
         };
@@ -1315,7 +1311,7 @@
           showToast('Záznam upraven');
         } else {
           await storage.addEntry(entry);
-          await storage.setSetting('lastUsedTypeId', typeId);
+          await storage.setSetting('lastUsedTypeName', selectedTypeName);
           showToast('Služba uložena');
         }
 
@@ -1343,7 +1339,6 @@
 
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
-
       document.querySelector('.nav-item[data-view="view-add"]').classList.add('active');
       document.getElementById('view-add').classList.remove('hidden');
 
@@ -1353,7 +1348,7 @@
       document.getElementById('entry-amount').value = (entry.amountHalere / 100).toFixed(0);
       document.getElementById('entry-note').value = entry.note || '';
 
-      await refreshTypesDropdown('entry-service-type', entry.serviceTypeId);
+      await refreshTypesDropdown('entry-service-type', entry.serviceTypeName);
       document.getElementById('btn-submit-entry').textContent = 'Aktualizovat službu';
     };
 
@@ -1365,6 +1360,7 @@
       }
     };
 
+    // --- OPRAVA STATISTIK: Seskupení podle normalizovaného názvu služby ---
     async function renderStats() {
       const entries = await storage.getAllEntries();
       const current = entries.filter(e => e.monthKey === currentMonthKey);
@@ -1373,29 +1369,45 @@
 
       const typeMap = {};
       current.forEach(e => {
-        if (!typeMap[e.serviceTypeId]) typeMap[e.serviceTypeId] = { name: e.serviceTypeName, total: 0, count: 0 };
-        typeMap[e.serviceTypeId].total += e.amountHalere;
-        typeMap[e.serviceTypeId].count++;
+        // Seskupujeme podle čistého názvu (odstranění mezer a diakritiky), aby se nespojovaly odlišné položky, ale sloučily stejné
+        const normKey = (e.serviceTypeName || 'Služba').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (!typeMap[normKey]) {
+          typeMap[normKey] = {
+            name: (e.serviceTypeName || 'Služba').trim(),
+            total: 0,
+            count: 0
+          };
+        }
+        typeMap[normKey].total += e.amountHalere;
+        typeMap[normKey].count++;
       });
 
       const total = current.reduce((a, b) => a + b.amountHalere, 0);
       let html = `<div class="card"><div class="card-title">Podle služeb (${formatMonthLabel(currentMonthKey)})</div>`;
 
-      Object.values(typeMap).sort((a, b) => b.total - a.total).forEach(t => {
-        const pct = total > 0 ? Math.round((t.total / total) * 100) : 0;
-        html += `
-          <div style="margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:6px;">
-            <div style="display:flex; justify-content:space-between; font-weight:600;">
-              <span>${escapeHtml(t.name)}</span>
-              <span style="color:#f59f00">${formatKc(t.total)}</span>
+      const sorted = Object.values(typeMap).sort((a, b) => b.total - a.total);
+
+      if (sorted.length === 0) {
+        html += '<div style="color:var(--text-muted); font-size:0.9rem;">Žádné záznamy pro tento měsíc.</div>';
+      } else {
+        sorted.forEach(t => {
+          const pct = total > 0 ? Math.round((t.total / total) * 100) : 0;
+          const avgHalere = t.count > 0 ? Math.round(t.total / t.count) : 0;
+          html += `
+            <div style="margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:1.05rem;">
+                <span>${escapeHtml(t.name)}</span>
+                <span style="color:#f59f00">${formatKc(t.total)}</span>
+              </div>
+              <div style="font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between; margin-top:2px;">
+                <span>Počet: ${t.count} ks (${pct} %)</span>
+                <span>Průměr: ${formatKc(avgHalere)}</span>
+              </div>
             </div>
-            <div style="font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between;">
-              <span>Počet: ${t.count} ks (${pct} %)</span>
-              <span>Průměr: ${formatKc(t.total / t.count)}</span>
-            </div>
-          </div>
-        `;
-      });
+          `;
+        });
+      }
+
       html += `</div>`;
       container.innerHTML = html;
     }
