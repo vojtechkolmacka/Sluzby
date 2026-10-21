@@ -2,1205 +2,209 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#1c1e24">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#161b22">
+  <meta name="description" content="Koloběžníkovy služby - Evidence prodaných služeb Datart">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/app.css">
   <title>Koloběžníkovy služby</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <style>
-    :root {
-      --bg: #121316;
-      --card-bg: #1c1e24;
-      --card-border: #2a2d36;
-      --text: #f0f2f5;
-      --text-muted: #8b92a0;
-      --primary: #ffaa00;
-      --primary-hover: #e09600;
-      --success: #2ecc71;
-      --danger: #e74c3c;
-      --nav-bg: #16181e;
-      --accent: #3498db;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding-bottom: 95px;
-      min-height: 100vh;
-    }
-
-    header {
-      background-color: var(--card-bg);
-      border-bottom: 1px solid var(--card-border);
-      padding: 14px 16px;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    header h1 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    main {
-      padding: 14px;
-      max-width: 650px;
-      margin: 0 auto;
-    }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-
-    .card-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .stat-number {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--text);
-      margin: 4px 0;
-    }
-
-    .stat-subtext {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .progress-bar-bg {
-      background: #2a2d36;
-      border-radius: 6px;
-      height: 10px;
-      overflow: hidden;
-      margin: 8px 0;
-    }
-
-    .progress-bar-fill {
-      background: var(--primary);
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 14px;
-      background-color: #0f1013;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 1.05rem;
-      margin-bottom: 14px;
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-    }
-
-    .btn {
-      width: 100%;
-      padding: 15px;
-      background-color: var(--primary);
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn:active { background-color: var(--primary-hover); }
-
-    .btn-secondary {
-      background: #2a2d36;
-      color: var(--text);
-      padding: 10px 14px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      border: 1px solid #3a3f4d;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none;
-      width: 100%;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .month-selector {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 8px 14px;
-    }
-
-    .month-selector button {
-      background: none;
-      border: none;
-      color: var(--primary);
-      font-size: 1.4rem;
-      cursor: pointer;
-      padding: 6px 14px;
-    }
-
-    .month-title {
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    .day-row {
-      background: #16181e;
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-
-    .day-row.is-sunday { opacity: 0.6; }
-    .day-row.is-off { border-left: 3px solid var(--danger); }
-    .day-row.has-sales { border-left: 3px solid var(--primary); }
-
-    .day-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-
-    .day-name { font-weight: 700; }
-
-    .day-amount {
-      font-weight: 800;
-      color: var(--primary);
-      font-size: 1.05rem;
-    }
-
-    .day-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-      cursor: pointer;
-    }
-
-    .day-tag {
-      background: #242731;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      color: #cbd2df;
-    }
-
-    .day-details {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed var(--card-border);
-      display: none;
-    }
-
-    .day-details.open { display: block; }
-
-    .rec-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      font-size: 0.85rem;
-      border-bottom: 1px solid #20232b;
-    }
-
-    .rec-del-btn {
-      color: var(--danger);
-      background: none;
-      border: none;
-      padding: 4px 10px;
-      cursor: pointer;
-      font-size: 1.2rem;
-      font-weight: bold;
-    }
-
-    .toast {
-      position: fixed;
-      top: 65px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: var(--success);
-      color: #000;
-      font-weight: 700;
-      padding: 10px 20px;
-      border-radius: 30px;
-      z-index: 100;
-      display: none;
-    }
-
-    nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: var(--nav-bg);
-      border-top: 1px solid var(--card-border);
-      display: flex;
-      justify-content: space-around;
-      padding: 8px 0;
-      z-index: 50;
-    }
-
-    .nav-item {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      flex: 1;
-      padding: 4px 0;
-    }
-
-    .nav-item.active {
-      color: var(--primary);
-      font-weight: 700;
-    }
-
-    .nav-icon { font-size: 1.25rem; }
-  </style>
 </head>
 <body>
 
+  <!-- Horní lišta s názvem a stavem -->
   <header>
-    <h1>Koloběžníkovy služby</h1>
+    <div class="brand-title">
+      <span>⚡</span> Koloběžníkovy služby
+    </div>
+    <span id="month-status-badge" class="badge open">Otevřeno</span>
   </header>
 
-  <div id="toast" class="toast">Uloženo!</div>
+  <!-- Výběr měsíce -->
+  <div class="month-selector-bar">
+    <button id="btn-prev-month" aria-label="Předchozí měsíc">◀</button>
+    <div id="current-month-label" class="month-display">Načítání...</div>
+    <button id="btn-next-month" aria-label="Další měsíc">▶</button>
+  </div>
 
-  <main>
-    <!-- 1. PŘEHLED -->
-    <section id="tab-overview" class="tab-content active">
-      <div class="month-selector">
-        <button type="button" onclick="changeMonth(-1)">◀</button>
-        <div class="month-title" id="current-period-title">Načítám...</div>
-        <button type="button" onclick="changeMonth(1)">▶</button>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <span>Měsíční cíl</span>
-          <span id="target-percent" style="color: var(--primary);">0 %</span>
-        </div>
-        <div class="stat-number" id="target-sold">0 Kč</div>
-        <div class="progress-bar-bg">
-          <div id="target-progress-fill" class="progress-bar-fill"></div>
-        </div>
-        <div class="stat-subtext" style="display:flex; justify-content:space-between; margin-top:4px;">
-          <span id="target-total-display">Cíl: nenastaven</span>
-          <span id="target-remaining">Zbývá: 0 Kč</span>
+  <div class="container">
+    <!-- 1. POHLED: PŘEHLED -->
+    <section id="view-overview" class="view-section">
+      <!-- Karta Měsíční cíl a potřebný průměr -->
+      <div id="goal-card" class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="card-title" style="margin:0;">MĚSÍČNÍ CÍL</span>
+          <span id="goal-pct-val" style="color:#f59f00; font-weight:700; font-size:1.1rem;">0 %</span>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:8px 10px; background:#16181e; border-radius:8px; border:1px solid var(--card-border);">
-          <span style="font-size:0.85rem; color:var(--text-muted);">Do konce měsíce:</span>
-          <span id="days-remaining-badge" style="font-size:0.9rem; font-weight:700; color:var(--primary);">...</span>
+        <div id="stat-total-amount" class="stat-huge" style="margin:8px 0;">0 Kč</div>
+
+        <div class="progress-track" style="margin-bottom:8px;">
+          <div id="goal-progress-bar" class="progress-fill" style="width:0%;"></div>
         </div>
 
-        <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--card-border);">
-          <div style="font-size:0.85rem; color:var(--text-muted);">Potřebný denní průměr pro splnění (od zítřka):</div>
-          <div style="font-size:1.3rem; font-weight:800; color:var(--accent); margin:4px 0;" id="needed-daily-rate">0 Kč / den</div>
-          <div style="font-size:0.75rem; color:var(--text-muted);" id="remaining-workdays-info">
-            Počítá se s pracovními dny od zítřka (So = 0.5, Ne = volno, svátky vyloučeny).
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted);">
+          <span>Cíl: <span id="goal-target-val">0 Kč</span></span>
+          <span id="goal-diff-val">Zbývá: 0 Kč</span>
+        </div>
+
+        <!-- Box se zbývajícími dny do konce měsíce -->
+        <div style="background:var(--bg-main); padding:10px 12px; border-radius:8px; margin-top:12px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-muted); font-size:0.85rem;">Do konce měsíce:</span>
+          <strong id="remaining-days-info" style="color:#f59f00; font-size:0.95rem;">-</strong>
+        </div>
+
+        <!-- Potřebný denní průměr VČETNĚ DNEŠKA -->
+        <div style="margin-top:14px; background:rgba(88, 166, 255, 0.05); padding:12px; border-radius:8px; border:1px solid rgba(88, 166, 255, 0.2);">
+          <div style="color:var(--text-muted); font-size:0.82rem;">Potřebný denní průměr pro splnění (včetně dneška):</div>
+          <div id="required-daily-avg" style="font-size:1.6rem; font-weight:700; color:var(--accent); margin:4px 0;">0 Kč / den</div>
+          <div id="required-avg-note" style="color:var(--text-muted); font-size:0.75rem;">
+            Zbývá 0 prac. dní včetně dneška (Po–Pá = 1, So = 0.5, Ne/svátky = 0).
           </div>
         </div>
-      </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">Dnes prodáno</div>
-          <div class="stat-number" id="today-total" style="font-size:1.4rem;">0 Kč</div>
-          <div class="stat-subtext" id="today-count">0 služeb</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Aktivní dny</div>
-          <div class="stat-number" id="active-days-count" style="font-size:1.4rem;">0</div>
-          <div class="stat-subtext" id="active-days-avg">Průměr: 0 Kč/den</div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button id="btn-set-goal" class="btn btn-secondary btn-sm" style="flex:1;">Nastavit cíl</button>
+          <button id="btn-toggle-close" class="btn btn-secondary btn-sm" style="flex:1;">Uzavřít měsíc</button>
         </div>
       </div>
 
-      <button type="button" class="btn" onclick="switchTab('tab-record')">+ Zapsat novou službu</button>
+      <!-- Karta dnešních tržeb a aktivních dnů -->
+      <div class="stat-grid" style="margin-top:0; margin-bottom:16px;">
+        <div class="stat-item">
+          <div class="stat-label">DNES PRODÁNO</div>
+          <div id="stat-today-amount" class="stat-val" style="color:#7ee787;">0 Kč</div>
+          <div id="stat-today-count" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">0 služeb</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">AKTIVNÍ DNY</div>
+          <div id="stat-active-days" class="stat-val">0</div>
+          <div id="stat-avg-day" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Průměr: 0 Kč/den</div>
+        </div>
+      </div>
+
+      <button id="btn-quick-add" class="btn btn-primary" style="margin-bottom:16px; font-size:1.1rem; padding:16px; background:#f59f00; color:#000;">
+        + Zapsat novou službu
+      </button>
+
+      <div class="card">
+        <div class="card-title">Průběh tržeb v měsíci</div>
+        <div id="overview-chart" class="bar-chart"></div>
+      </div>
     </section>
 
-    <!-- 2. ZAPSAT -->
-    <section id="tab-record" class="tab-content">
+    <!-- 2. POHLED: ZAPSAT SLUŽBU -->
+    <section id="view-add" class="view-section hidden">
       <div class="card">
-        <div class="card-title">Nový záznam</div>
-        <form id="service-form" onsubmit="saveRecord(event)">
-          <label for="record-date">Datum</label>
-          <input type="date" id="record-date" required>
+        <h2 id="form-heading" style="font-size:1.15rem; margin-bottom:14px;">Zapsat novou službu</h2>
+        <form id="form-add-entry">
+          <input type="hidden" id="edit-entry-id" value="">
 
-          <label for="record-type">Typ služby</label>
-          <select id="record-type" onchange="handleTypeSelectChange(this)" required>
-          </select>
-
-          <div id="custom-type-container" style="display:none; margin-bottom:14px;">
-            <label for="custom-type-input" style="color:var(--primary);">Název nového typu služby</label>
-            <div style="display:flex; gap:8px;">
-              <input type="text" id="custom-type-input" placeholder="např. Fólie na mobil" style="margin-bottom:0;">
-              <button type="button" class="btn" style="width:auto; padding:0 18px;" onclick="addCustomType()">Přidat</button>
-            </div>
+          <div class="form-group">
+            <label for="entry-date">Datum prodeje</label>
+            <input type="date" id="entry-date" required>
           </div>
 
-          <label for="record-amount">Částka v Kč</label>
-          <input type="number" id="record-amount" placeholder="např. 499" min="1" step="1" required inputmode="numeric">
+          <div class="form-group">
+            <label for="entry-service-type">Typ služby</label>
+            <select id="entry-service-type" required></select>
+          </div>
 
-          <label for="record-note">Poznámka (volitelné)</label>
-          <input type="text" id="record-note" placeholder="např. číslo účtenky nebo model">
+          <!-- Skryté pole při volbě nové vlastní služby -->
+          <div id="new-type-group" class="form-group hidden">
+            <label for="new-type-name">Název nové kategorie</label>
+            <input type="text" id="new-type-name" placeholder="Např. Kalibrace TV">
+          </div>
 
-          <button type="submit" id="submit-btn" class="btn">Uložit službu</button>
+          <div class="form-group">
+            <label for="entry-amount">Částka v Kč</label>
+            <input type="number" id="entry-amount" inputmode="numeric" placeholder="Např. 1499" min="0" step="1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="entry-note">Poznámka (volitelná)</label>
+            <input type="text" id="entry-note" placeholder="Číslo účtenky, model, zákazník...">
+          </div>
+
+          <button type="submit" id="btn-submit-entry" class="btn btn-primary">Uložit službu</button>
         </form>
       </div>
     </section>
 
-    <!-- 3. DNY V MĚSÍCI -->
-    <section id="tab-history" class="tab-content">
-      <div class="month-selector">
-        <button type="button" onclick="changeMonth(-1)">◀</button>
-        <div class="month-title" id="history-period-title">Načítám...</div>
-        <button type="button" onclick="changeMonth(1)">▶</button>
+    <!-- 3. POHLED: DNY V MĚSÍCI -->
+    <section id="view-daily" class="view-section hidden">
+      <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">
+        Klepnutím na štítek dne (např. Sobota / Volno) můžete změnit pracovní váhu dne pro výpočet cíle.
       </div>
-
-      <div class="card" style="padding:10px 14px; margin-bottom:12px; font-size:0.8rem; color:var(--text-muted);">
-        Klepnutím na den rozbalíš jeho služby nebo nastavíš svátek / volno.
-      </div>
-
-      <div id="days-container"></div>
+      <div id="daily-list"></div>
     </section>
 
-    <!-- 4. STATISTIKY -->
-    <section id="tab-stats" class="tab-content">
-      <div class="card">
-        <div class="card-title">Rozpad služeb v měsíci</div>
-        <div id="stats-by-type">Načítám...</div>
-      </div>
+    <!-- 4. POHLED: STATISTIKY -->
+    <section id="view-stats" class="view-section hidden">
+      <div id="stats-content"></div>
     </section>
 
-    <!-- 5. NASTAVENÍ A ZÁLOHY -->
-    <section id="tab-settings" class="tab-content">
-      <div class="card">
-        <div class="card-title">Měsíční cíl</div>
-        <label for="target-input">Cílová částka v Kč pro vybraný měsíc</label>
-        <input type="number" id="target-input" placeholder="např. 88000" min="0" step="1000" inputmode="numeric">
-        <button type="button" class="btn" onclick="saveMonthlyTarget()">Uložit cíl měsíce</button>
-      </div>
+    <!-- 5. POHLED: HISTORIE -->
+    <section id="view-history" class="view-section hidden">
+      <div class="card-title" style="margin-bottom:10px;">Všechna zaznamenaná období</div>
+      <div id="history-list"></div>
+    </section>
 
-      <div class="card">
-        <div class="card-title">Správa vlastních typů služeb</div>
-        <div id="custom-types-list" style="margin-bottom:10px;"></div>
-      </div>
-
+    <!-- 6. POHLED: NASTAVENÍ A ZÁLOHY -->
+    <section id="view-settings" class="view-section hidden">
       <div class="card">
         <div class="card-title">Záloha a obnova dat</div>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-          Ulož si zálohu do telefonu nebo si ji stáhni.
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+          Veškerá data jsou bezpečně uložena v tomto zařízení v IndexedDB.
         </p>
-
-        <button type="button" class="btn-secondary" onclick="exportBackupJSON()">
-          💾 Stáhnout JSON zálohu do telefonu
-        </button>
-
-        <button type="button" class="btn-secondary" onclick="exportToCSV()">
-          📊 Exportovat tabulku pro Excel (CSV)
-        </button>
-
-        <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--card-border);">
-          <label style="color:var(--primary);">Nahrát zálohu ze souboru:</label>
-          <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="handleFileImport(event)">
-          <button type="button" class="btn-secondary" onclick="document.getElementById('import-file-input').click()">
-            📤 Vybrat a obnovit soubor zálohy
-          </button>
-        </div>
+        <button id="btn-export-json" class="btn btn-secondary" style="margin-bottom:8px;">Stáhnout zálohu (JSON)</button>
+        <button id="btn-export-csv" class="btn btn-secondary" style="margin-bottom:8px;">Exportovat pro Excel (CSV)</button>
+        <button id="btn-import-json" class="btn btn-secondary">Obnovit data ze zálohy</button>
+        <input type="file" id="file-import-input" accept=".json" class="hidden">
       </div>
 
       <div class="card">
-        <div class="card-title">Pracovní kalendář</div>
-        <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">
-          Výpočet denního tempa automaticky počítá zbývající dny <strong>od zítřka</strong>:<br>
-          • <strong>Po až Pá:</strong> 1 pracovní den<br>
-          • <strong>Sobota:</strong> 0,5 dne (půlden)<br>
-          • <strong>Neděle:</strong> volno (0 dní)<br>
-          • <strong>Svátky / Vlastní volno:</strong> označíš klepnutím na tlačítko u konkrétního dne v záložce „Dny v měsíci“.
-        </p>
+        <div class="card-title">Správa kategorií služeb</div>
+        <div id="types-management-list"></div>
+        <button id="btn-restore-types" class="btn btn-secondary btn-sm" style="margin-top:12px;">Obnovit výchozí typy Datart</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Diagnostika a testy</div>
+        <button id="btn-run-tests" class="btn btn-secondary btn-sm" onclick="runAutomatedTests()">Spustit vnitřní testy (18 scénářů)</button>
+        <div id="test-results-log" style="font-family:monospace; font-size:0.75rem; margin-top:8px; white-space:pre-wrap; color:var(--text-muted);"></div>
       </div>
     </section>
-  </main>
+  </div>
 
-  <nav>
-    <button type="button" class="nav-item active" onclick="switchTab('tab-overview', this)">
+  <!-- Plovoucí Toast notifikace -->
+  <div id="toast" class="toast">Hotovo</div>
+
+  <!-- Spodní fixní navigace -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-view="view-overview">
       <span class="nav-icon">📊</span>
       <span>Přehled</span>
     </button>
-    <button type="button" class="nav-item" onclick="switchTab('tab-record', this)">
+    <button class="nav-item" data-view="view-add">
       <span class="nav-icon">➕</span>
       <span>Zapsat</span>
     </button>
-    <button type="button" class="nav-item" onclick="switchTab('tab-history', this)">
+    <button class="nav-item" data-view="view-daily">
       <span class="nav-icon">📅</span>
       <span>Dny v měsíci</span>
     </button>
-    <button type="button" class="nav-item" onclick="switchTab('tab-stats', this)">
+    <button class="nav-item" data-view="view-stats">
       <span class="nav-icon">📈</span>
       <span>Statistiky</span>
     </button>
-    <button type="button" class="nav-item" onclick="switchTab('tab-settings', this)">
+    <button class="nav-item" data-view="view-settings">
       <span class="nav-icon">⚙️</span>
       <span>Nastavení</span>
     </button>
   </nav>
 
-  <script>
-    let db = null;
-    const DB_NAME = "KolobeznikSluzbyIndexedDB";
-    const DB_VERSION = 1;
-
-    let viewDate = new Date();
-    const DAY_NAMES = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
-
-    const DEFAULT_TYPES = [
-      "Bleskovka",
-      "Delší záruka",
-      "Nahodilé poškození",
-      "Doprava",
-      "Instalace",
-      "Instalace TV na stěnu",
-      "Instalace počítače"
-    ];
-
-    function initDB(callback) {
-      if (db) {
-        if (callback) callback();
-        return;
-      }
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onupgradeneeded = function(e) {
-        const database = e.target.result;
-        if (!database.objectStoreNames.contains("store")) {
-          database.createObjectStore("store");
-        }
-      };
-
-      request.onsuccess = function(e) {
-        db = e.target.result;
-        if (callback) callback();
-      };
-
-      request.onerror = function(e) {
-        console.error("Chyba otevírání IndexedDB", e.target.error);
-        alert("Chyba při otevírání trvalého úložiště v prohlížeči.");
-      };
-    }
-
-    function dbGet(key, fallback, callback) {
-      initDB(function() {
-        try {
-          const tx = db.transaction("store", "readonly");
-          const store = tx.objectStore("store");
-          const req = store.get(key);
-          req.onsuccess = function() {
-            callback(req.result !== undefined ? req.result : fallback);
-          };
-          req.onerror = function() {
-            callback(fallback);
-          };
-        } catch (err) {
-          callback(fallback);
-        }
-      });
-    }
-
-    function dbSet(key, val, callback) {
-      initDB(function() {
-        try {
-          const tx = db.transaction("store", "readwrite");
-          const store = tx.objectStore("store");
-          store.put(val, key);
-          tx.oncomplete = function() {
-            if (callback) callback();
-          };
-          tx.onerror = function(err) {
-            console.error("Chyba ukládání do IndexedDB", err);
-          };
-        } catch (err) {
-          console.error("Chyba transakce IndexedDB", err);
-        }
-      });
-    }
-
-    function getMonthKey(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      return `${y}-${m}`;
-    }
-
-    function changeMonth(delta) {
-      viewDate.setMonth(viewDate.getMonth() + delta);
-      renderCurrentView();
-    }
-
-    function updateTypeDropdown(selectedVal) {
-      dbGet("ks_custom_types", [], function(custom) {
-        const allTypes = [...DEFAULT_TYPES, ...custom];
-        const select = document.getElementById("record-type");
-        
-        let html = "";
-        allTypes.forEach((t, i) => {
-          html += `<option value="${escapeHtml(t)}">${i + 1}. ${escapeHtml(t)}</option>`;
-        });
-        html += `<option value="__custom__" style="color:var(--primary); font-weight:bold;">+ Vlastní typ služby...</option>`;
-
-        select.innerHTML = html;
-
-        if (selectedVal && allTypes.includes(selectedVal)) {
-          select.value = selectedVal;
-        }
-      });
-    }
-
-    function handleTypeSelectChange(selectEl) {
-      const container = document.getElementById("custom-type-container");
-      if (selectEl.value === "__custom__") {
-        container.style.display = "block";
-        document.getElementById("custom-type-input").focus();
-      } else {
-        container.style.display = "none";
-      }
-    }
-
-    function addCustomType() {
-      const input = document.getElementById("custom-type-input");
-      const val = input.value.trim();
-      if (!val) {
-        alert("Zadej název nové služby.");
-        return;
-      }
-
-      dbGet("ks_custom_types", [], function(custom) {
-        if (DEFAULT_TYPES.includes(val) || custom.includes(val)) {
-          alert("Tento typ služby již existuje.");
-          return;
-        }
-
-        custom.push(val);
-        dbSet("ks_custom_types", custom, function() {
-          input.value = "";
-          document.getElementById("custom-type-container").style.display = "none";
-
-          updateTypeDropdown(val);
-          renderCustomTypesList();
-          showToast(`Typ „${val}“ byl přidán`);
-        });
-      });
-    }
-
-    function deleteCustomType(typeToDelete) {
-      if (!confirm(`Chceš odebrat typ „${typeToDelete}“ z nabídky? (Existující záznamy s touto službou zůstanou v historii zachovány).`)) return;
-
-      dbGet("ks_custom_types", [], function(custom) {
-        custom = custom.filter(t => t !== typeToDelete);
-        dbSet("ks_custom_types", custom, function() {
-          updateTypeDropdown();
-          renderCustomTypesList();
-          showToast("Typ služby byl odebrán");
-        });
-      });
-    }
-
-    function renderCustomTypesList() {
-      dbGet("ks_custom_types", [], function(custom) {
-        const container = document.getElementById("custom-types-list");
-
-        if (custom.length === 0) {
-          container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Žádné vlastní typy nebyly vytvořeny.</p>';
-          return;
-        }
-
-        let html = "";
-        custom.forEach(t => {
-          html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #20232b; font-size:0.9rem;">
-              <span>${escapeHtml(t)}</span>
-              <button type="button" class="rec-del-btn" style="font-size:0.9rem;" onclick="deleteCustomType('${escapeHtml(t)}')">✕ Odebrat</button>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      });
-    }
-
-    function renderCurrentView() {
-      const monthKey = getMonthKey(viewDate);
-      const monthNames = ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"];
-      const titleStr = `${monthNames[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
-
-      document.getElementById("current-period-title").textContent = titleStr;
-      document.getElementById("history-period-title").textContent = titleStr;
-
-      dbGet("ks_records", [], function(allRecords) {
-        dbGet("ks_targets", {}, function(targets) {
-          dbGet("ks_holidays", [], function(holidaysList) {
-            const holidays = new Set(holidaysList);
-            const targetAmount = targets[monthKey] || 0;
-            const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(monthKey));
-
-            renderOverview(monthRecords, targetAmount, holidays);
-            renderDaysList(monthKey, monthRecords, holidays);
-            renderStats(monthRecords);
-            renderCustomTypesList();
-          });
-        });
-      });
-    }
-
-    function renderOverview(monthRecords, target, holidays) {
-      const todayObj = new Date();
-      const todayStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
-      const isCurrentMonth = getMonthKey(todayObj) === getMonthKey(viewDate);
-
-      let todaySum = 0;
-      let todayCount = 0;
-      monthRecords.forEach(r => {
-        if (r.date === todayStr) {
-          todaySum += r.amount;
-          todayCount++;
-        }
-      });
-      document.getElementById("today-total").textContent = todaySum.toLocaleString("cs-CZ") + " Kč";
-      document.getElementById("today-count").textContent = todayCount + " služeb";
-
-      const daysWithSales = new Set(monthRecords.map(r => r.date));
-      const totalMonthSum = monthRecords.reduce((acc, r) => acc + r.amount, 0);
-      const activeCount = daysWithSales.size;
-      const avgPerActiveDay = activeCount > 0 ? Math.round(totalMonthSum / activeCount) : 0;
-
-      document.getElementById("active-days-count").textContent = activeCount;
-      document.getElementById("active-days-avg").textContent = "Průměr: " + avgPerActiveDay.toLocaleString("cs-CZ") + " Kč/den";
-
-      document.getElementById("target-sold").textContent = totalMonthSum.toLocaleString("cs-CZ") + " Kč";
-      document.getElementById("target-input").value = target > 0 ? target : "";
-
-      const year = viewDate.getFullYear();
-      const month = viewDate.getMonth();
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const currentDay = isCurrentMonth ? todayObj.getDate() : 1;
-      const calDaysLeft = Math.max(0, lastDay - currentDay);
-
-      const remWorkdays = calculateRemainingWorkdays(viewDate, holidays, isCurrentMonth);
-
-      const badge = document.getElementById("days-remaining-badge");
-      if (isCurrentMonth) {
-        badge.textContent = `${calDaysLeft} ${getDaysWord(calDaysLeft)} (${remWorkdays.toFixed(1)} prac.)`;
-      } else {
-        badge.textContent = `Celkem ${lastDay} dní (${remWorkdays.toFixed(1)} prac.)`;
-      }
-
-      if (target > 0) {
-        const remaining = Math.max(0, target - totalMonthSum);
-        const realPct = Math.round((totalMonthSum / target) * 100);
-        const fillPct = Math.min(100, realPct);
-
-        document.getElementById("target-total-display").textContent = "Cíl: " + target.toLocaleString("cs-CZ") + " Kč";
-        document.getElementById("target-remaining").textContent = "Zbývá: " + remaining.toLocaleString("cs-CZ") + " Kč";
-        document.getElementById("target-percent").textContent = realPct + " %";
-        document.getElementById("target-progress-fill").style.width = fillPct + "%";
-
-        if (remaining <= 0) {
-          document.getElementById("needed-daily-rate").textContent = "CÍL SPLNĚN! 🎉";
-          document.getElementById("remaining-workdays-info").textContent = "Měsíční cíl je úspěšně pokořen.";
-        } else if (remWorkdays > 0) {
-          const neededPerDay = Math.round(remaining / remWorkdays);
-          document.getElementById("needed-daily-rate").textContent = neededPerDay.toLocaleString("cs-CZ") + " Kč / den";
-          document.getElementById("remaining-workdays-info").textContent = `Zbývá ${remWorkdays.toFixed(1)} prac. dní od zítřka (Po–Pá = 1, So = 0.5, Ne/svátky = 0).`;
-        } else {
-          document.getElementById("needed-daily-rate").textContent = remaining.toLocaleString("cs-CZ") + " Kč";
-          document.getElementById("remaining-workdays-info").textContent = "Žádné zbývající pracovní dny v tomto měsíci.";
-        }
-      } else {
-        document.getElementById("target-total-display").textContent = "Cíl: nenastaven";
-        document.getElementById("target-remaining").textContent = "Zbývá: –";
-        document.getElementById("target-percent").textContent = "– %";
-        document.getElementById("target-progress-fill").style.width = "0%";
-        document.getElementById("needed-daily-rate").textContent = "Nastav v záložce Nastavení";
-        document.getElementById("remaining-workdays-info").textContent = "Zadej cílovou částku a uvidíš potřebný denní průměr.";
-      }
-    }
-
-    function getDaysWord(n) {
-      if (n === 1) return "den";
-      if (n >= 2 && n <= 4) return "dny";
-      return "dní";
-    }
-
-    function calculateRemainingWorkdays(d, holidays, isCurrentMonth) {
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      
-      const todayObj = new Date();
-      const startDay = isCurrentMonth ? (todayObj.getDate() + 1) : 1;
-
-      let workdays = 0;
-      for (let day = startDay; day <= lastDay; day++) {
-        const curDate = new Date(year, month, day);
-        const dayOfWeek = curDate.getDay();
-        const curDateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-        if (holidays.has(curDateStr)) continue;
-
-        if (dayOfWeek === 0) {
-          continue;
-        } else if (dayOfWeek === 6) {
-          workdays += 0.5;
-        } else {
-          workdays += 1.0;
-        }
-      }
-      return workdays;
-    }
-
-    function renderDaysList(monthKey, records, holidays) {
-      const container = document.getElementById("days-container");
-      container.innerHTML = "";
-
-      const parts = monthKey.split("-");
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const totalDays = new Date(year, month + 1, 0).getDate();
-
-      const recordsByDate = {};
-      records.forEach(r => {
-        if (!recordsByDate[r.date]) recordsByDate[r.date] = [];
-        recordsByDate[r.date].push(r);
-      });
-
-      for (let day = 1; day <= totalDays; day++) {
-        const dayDate = new Date(year, month, day);
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const dayOfWeek = dayDate.getDay();
-        const dayName = DAY_NAMES[dayOfWeek];
-
-        const dayRecs = recordsByDate[dateStr] || [];
-        const dayTotal = dayRecs.reduce((sum, r) => sum + r.amount, 0);
-
-        const isSunday = dayOfWeek === 0;
-        const isSaturday = dayOfWeek === 6;
-        const isHoliday = holidays.has(dateStr);
-
-        const typeCounts = {};
-        dayRecs.forEach(r => {
-          typeCounts[r.type] = (typeCounts[r.type] || 0) + 1;
-        });
-
-        const dayRow = document.createElement("div");
-        dayRow.className = `day-row ${dayRecs.length > 0 ? "has-sales" : ""} ${isSunday ? "is-sunday" : ""} ${isHoliday ? "is-off" : ""}`;
-
-        let tagsHtml = "";
-        for (const t of Object.keys(typeCounts)) {
-          tagsHtml += `<span class="day-tag">${escapeHtml(t)}: ${typeCounts[t]}×</span>`;
-        }
-
-        if (isHoliday) {
-          tagsHtml += `<span class="day-tag" style="background:#5a1e1e; color:#ff9b9b;">Svátek / Volno</span>`;
-        } else if (isSaturday) {
-          tagsHtml += `<span class="day-tag" style="background:#2c3e50;">Sobota (0.5 dne)</span>`;
-        } else if (isSunday) {
-          tagsHtml += `<span class="day-tag" style="background:#1f2229;">Neděle</span>`;
-        }
-
-        let detailsHtml = "";
-        if (dayRecs.length > 0) {
-          detailsHtml = dayRecs.map(r => `
-            <div class="rec-item">
-              <div>
-                <strong>${escapeHtml(r.type)}</strong>: ${r.amount.toLocaleString("cs-CZ")} Kč
-                ${r.note ? `<span style="color:var(--text-muted);"> (${escapeHtml(r.note)})</span>` : ""}
-              </div>
-              <button type="button" class="rec-del-btn" onclick="deleteRecord('${r.id}', event)">✕</button>
-            </div>
-          `).join("");
-        } else {
-          detailsHtml = `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">Žádné zapsané služby pro tento den.</p>`;
-        }
-
-        detailsHtml += `
-          <div style="display:flex; gap:8px; margin-top:10px;">
-            <button type="button" class="btn-secondary" onclick="quickAddForDate('${dateStr}', event)">+ Zapsat službu</button>
-            <button type="button" class="btn-secondary" onclick="toggleHoliday('${dateStr}', event)">
-              ${isHoliday ? "Zrušit svátek/volno" : "Označit jako svátek/volno"}
-            </button>
-          </div>
-        `;
-
-        dayRow.innerHTML = `
-          <div class="day-header" onclick="toggleDayDetails('${dateStr}')">
-            <div>
-              <span class="day-name">${day}. ${dayName}</span>
-              <span style="font-size:0.8rem; color:var(--text-muted); margin-left:6px;">(${dayRecs.length})</span>
-            </div>
-            <div class="day-amount">${dayTotal > 0 ? dayTotal.toLocaleString("cs-CZ") + " Kč" : "–"}</div>
-          </div>
-          <div class="day-tags" onclick="toggleDayDetails('${dateStr}')">${tagsHtml}</div>
-          <div class="day-details" id="details-${dateStr}">
-            ${detailsHtml}
-          </div>
-        `;
-
-        container.appendChild(dayRow);
-      }
-    }
-
-    function toggleDayDetails(dateStr) {
-      const el = document.getElementById("details-" + dateStr);
-      if (el) el.classList.toggle("open");
-    }
-
-    function quickAddForDate(dateStr, e) {
-      if (e) e.stopPropagation();
-      document.getElementById("record-date").value = dateStr;
-      switchTab("tab-record");
-    }
-
-    function toggleHoliday(dateStr, e) {
-      if (e) e.stopPropagation();
-      dbGet("ks_holidays", [], function(holidays) {
-        if (holidays.includes(dateStr)) {
-          holidays = holidays.filter(d => d !== dateStr);
-          showToast("Den nastaven jako pracovní");
-        } else {
-          holidays.push(dateStr);
-          showToast("Den označen jako svátek / volno");
-        }
-        dbSet("ks_holidays", holidays, function() {
-          renderCurrentView();
-        });
-      });
-    }
-
-    function saveRecord(e) {
-      e.preventDefault();
-      const date = document.getElementById("record-date").value;
-      const type = document.getElementById("record-type").value;
-      const amount = parseInt(document.getElementById("record-amount").value, 10);
-      const note = document.getElementById("record-note").value.trim();
-
-      if (type === "__custom__") {
-        alert("Prosím nejprve zadej a přidej název nového typu služby.");
-        return;
-      }
-
-      if (!date || isNaN(amount) || amount <= 0) {
-        alert("Zadej platné datum a kladnou částku!");
-        return;
-      }
-
-      dbGet("ks_records", [], function(records) {
-        records.push({
-          id: "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-          date: date,
-          type: type,
-          amount: amount,
-          note: note,
-          createdAt: new Date().toISOString()
-        });
-
-        dbSet("ks_records", records, function() {
-          showToast("Uloženo: " + amount.toLocaleString("cs-CZ") + " Kč");
-
-          document.getElementById("record-amount").value = "";
-          document.getElementById("record-note").value = "";
-
-          const recMonthKey = date.substring(0, 7);
-          if (getMonthKey(viewDate) !== recMonthKey) {
-            const parts = recMonthKey.split("-");
-            viewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
-          }
-
-          renderCurrentView();
-          switchTab("tab-overview");
-        });
-      });
-    }
-
-    function deleteRecord(id, e) {
-      if (e) e.stopPropagation();
-      if (!confirm("Opravdu smazat tento záznam?")) return;
-
-      dbGet("ks_records", [], function(records) {
-        records = records.filter(r => r.id !== id);
-        dbSet("ks_records", records, function() {
-          showToast("Záznam smazán");
-          renderCurrentView();
-        });
-      });
-    }
-
-    function saveMonthlyTarget() {
-      const val = parseInt(document.getElementById("target-input").value, 10);
-      if (isNaN(val) || val < 0) {
-        alert("Zadej platnou částku cíle.");
-        return;
-      }
-      const monthKey = getMonthKey(viewDate);
-      dbGet("ks_targets", {}, function(targets) {
-        targets[monthKey] = val;
-        dbSet("ks_targets", targets, function() {
-          showToast("Měsíční cíl uložen!");
-          renderCurrentView();
-          switchTab("tab-overview");
-        });
-      });
-    }
-
-    function exportBackupJSON() {
-      dbGet("ks_records", [], function(records) {
-        dbGet("ks_targets", {}, function(targets) {
-          dbGet("ks_holidays", [], function(holidays) {
-            dbGet("ks_custom_types", [], function(customTypes) {
-              const backupData = {
-                version: "2.0",
-                appName: "KolobeznikovySluzby",
-                exportedAt: new Date().toISOString(),
-                records: records,
-                targets: targets,
-                holidays: holidays,
-                customTypes: customTypes
-              };
-
-              const jsonStr = JSON.stringify(backupData, null, 2);
-              const blob = new Blob([jsonStr], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              const dateStr = new Date().toISOString().split("T")[0];
-              a.href = url;
-              a.download = `kolobeznik-sluzby-zaloha-${dateStr}.json`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              showToast("Záloha uložena do telefonu!");
-            });
-          });
-        });
-      });
-    }
-
-    function exportToCSV() {
-      dbGet("ks_records", [], function(records) {
-        if (records.length === 0) {
-          alert("Zatím nejsou žádné záznamy k exportu.");
-          return;
-        }
-
-        records.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        let csv = "\uFEFFDatum;Typ služby;Částka v Kč;Poznámka\n";
-        records.forEach(r => {
-          const cleanNote = (r.note || "").replace(/;/g, ",");
-          csv += `${r.date};${r.type};${r.amount};${cleanNote}\n`;
-        });
-
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const dateStr = new Date().toISOString().split("T")[0];
-        a.href = url;
-        a.download = `sluzby-export-${dateStr}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast("Tabulka CSV stažena!");
-      });
-    }
-
-    function handleFileImport(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = JSON.parse(evt.target.result);
-          if (!data || !Array.isArray(data.records)) {
-            alert("Neplatný soubor zálohy! Chybí data záznamů.");
-            return;
-          }
-
-          const count = data.records.length;
-          if (!confirm(`Soubor obsahuje ${count} služeb. Chceš tato data nahrát do aplikace?`)) {
-            return;
-          }
-
-          dbSet("ks_records", data.records, function() {
-            if (data.targets) dbSet("ks_targets", data.targets);
-            if (data.holidays) dbSet("ks_holidays", data.holidays);
-            if (data.customTypes) dbSet("ks_custom_types", data.customTypes);
-
-            updateTypeDropdown();
-            showToast("Záloha úspěšně nahrána!");
-            renderCurrentView();
-            switchTab("tab-overview");
-          });
-        } catch (err) {
-          alert("Chyba při čtení souboru: " + err.message);
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = "";
-    }
-
-    function renderStats(records) {
-      const container = document.getElementById("stats-by-type");
-      if (records.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); padding:10px 0;">V tomto měsíci zatím nejsou záznamy.</p>';
-        return;
-      }
-
-      const totals = {};
-      const counts = {};
-      let allSum = 0;
-
-      records.forEach(r => {
-        totals[r.type] = (totals[r.type] || 0) + r.amount;
-        counts[r.type] = (counts[r.type] || 0) + 1;
-        allSum += r.amount;
-      });
-
-      let html = "";
-      for (const type of Object.keys(totals)) {
-        const sum = totals[type];
-        const cnt = counts[type];
-        const pct = allSum > 0 ? Math.round((sum / allSum) * 100) : 0;
-        const avg = Math.round(sum / cnt);
-
-        html += `
-          <div style="margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-            <div style="display:flex; justify-content:space-between; font-weight:700;">
-              <span>${escapeHtml(type)}</span>
-              <span style="color:var(--primary);">${sum.toLocaleString("cs-CZ")} Kč</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
-              <span>${cnt}× (průměr ${avg.toLocaleString("cs-CZ")} Kč)</span>
-              <span>${pct} %</span>
-            </div>
-            <div class="progress-bar-bg" style="height:6px; margin:4px 0 0 0;">
-              <div class="progress-bar-fill" style="width:${pct}%;"></div>
-            </div>
-          </div>
-        `;
-      }
-      container.innerHTML = html;
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById("toast");
-      t.textContent = msg;
-      t.style.display = "block";
-      setTimeout(function() { t.style.display = "none"; }, 2000);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return "";
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    function switchTab(tabId, navBtn) {
-      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      const targetSection = document.getElementById(tabId);
-      if (targetSection) targetSection.classList.add("active");
-
-      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
-      if (navBtn) {
-        navBtn.classList.add("active");
-      } else {
-        const buttons = document.querySelectorAll(".nav-item");
-        if (tabId === "tab-overview" && buttons[0]) buttons[0].classList.add("active");
-        if (tabId === "tab-record" && buttons[1]) buttons[1].classList.add("active");
-        if (tabId === "tab-history" && buttons[2]) buttons[2].classList.add("active");
-        if (tabId === "tab-stats" && buttons[3]) buttons[3].classList.add("active");
-        if (tabId === "tab-settings" && buttons[4]) buttons[4].classList.add("active");
-      }
-      window.scrollTo(0, 0);
-    }
-
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js");
-      });
-    }
-
-    // Start aplikace s opraveným lokálním datem
-    const todayObj = new Date();
-    const localDateStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth() + 1).padStart(2, '0') + '-' + String(todayObj.getDate()).padStart(2, '0');
-    document.getElementById("record-date").value = localDateStr;
-
-    initDB(function() {
-      updateTypeDropdown();
-      renderCurrentView();
-    });
-  </script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/tests.js"></script>
 </body>
 </html>
