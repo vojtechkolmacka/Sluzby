@@ -600,7 +600,25 @@
     ];
 
     class StorageService {
-      constructor() { this.db = null; }
+      constructor() {
+        this.db = null;
+        this._initPromise = null;
+      }
+
+      async getDb() {
+        if (this.db) {
+          try {
+            this.db.transaction('settings', 'readonly');
+            return this.db;
+          } catch (e) {
+            this.db = null;
+          }
+        }
+        if (!this._initPromise) {
+          this._initPromise = this.init();
+        }
+        return await this._initPromise;
+      }
 
       async init() {
         return new Promise((resolve, reject) => {
@@ -630,16 +648,22 @@
           };
           req.onsuccess = async (e) => {
             this.db = e.target.result;
+            this.db.onclose = () => { this.db = null; this._initPromise = null; };
             await this._seedInitialTypes();
+            this._initPromise = null;
             resolve(this.db);
           };
-          req.onerror = (e) => reject(e.target.error);
+          req.onerror = (e) => {
+            this._initPromise = null;
+            reject(e.target.error);
+          };
         });
       }
 
       async _seedInitialTypes() {
         const types = await this.getAllServiceTypes();
-        const tx = this.db.transaction('serviceTypes', 'readwrite');
+        const db = await this.getDb();
+        const tx = db.transaction('serviceTypes', 'readwrite');
         const store = tx.objectStore('serviceTypes');
         for (const def of DEFAULT_SERVICE_TYPES) {
           const exists = types.find(t => t.id === def.id || t.name === def.name);
@@ -655,8 +679,9 @@
 
       async addEntry(entry) {
         entry.monthKey = entry.date.substring(0, 7);
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('entries', 'readwrite');
+          const tx = db.transaction('entries', 'readwrite');
           const req = tx.objectStore('entries').add(entry);
           req.onsuccess = () => res(entry);
           req.onerror = () => rej(req.error);
@@ -665,8 +690,9 @@
 
       async updateEntry(entry) {
         entry.monthKey = entry.date.substring(0, 7);
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('entries', 'readwrite');
+          const tx = db.transaction('entries', 'readwrite');
           const req = tx.objectStore('entries').put(entry);
           req.onsuccess = () => res(entry);
           req.onerror = () => rej(req.error);
@@ -674,8 +700,9 @@
       }
 
       async deleteEntry(id) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('entries', 'readwrite');
+          const tx = db.transaction('entries', 'readwrite');
           const req = tx.objectStore('entries').delete(id);
           req.onsuccess = () => res(true);
           req.onerror = () => rej(req.error);
@@ -683,8 +710,9 @@
       }
 
       async getEntriesByMonth(monthKey) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('entries', 'readonly');
+          const tx = db.transaction('entries', 'readonly');
           const req = tx.objectStore('entries').index('monthKey').getAll(IDBKeyRange.only(monthKey));
           req.onsuccess = () => res(req.result || []);
           req.onerror = () => rej(req.error);
@@ -692,8 +720,9 @@
       }
 
       async getAllEntries() {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('entries', 'readonly');
+          const tx = db.transaction('entries', 'readonly');
           const req = tx.objectStore('entries').getAll();
           req.onsuccess = () => res(req.result || []);
           req.onerror = () => rej(req.error);
@@ -701,8 +730,9 @@
       }
 
       async getAllServiceTypes() {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('serviceTypes', 'readonly');
+          const tx = db.transaction('serviceTypes', 'readonly');
           const req = tx.objectStore('serviceTypes').getAll();
           req.onsuccess = () => {
             let list = req.result || [];
@@ -717,8 +747,9 @@
       }
 
       async saveServiceType(st) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('serviceTypes', 'readwrite');
+          const tx = db.transaction('serviceTypes', 'readwrite');
           const req = tx.objectStore('serviceTypes').put(st);
           req.onsuccess = () => res(st);
           req.onerror = () => rej(req.error);
@@ -726,15 +757,17 @@
       }
 
       async restoreDefaultServiceTypes() {
-        const tx = this.db.transaction('serviceTypes', 'readwrite');
+        const db = await this.getDb();
+        const tx = db.transaction('serviceTypes', 'readwrite');
         const store = tx.objectStore('serviceTypes');
         DEFAULT_SERVICE_TYPES.forEach(t => store.put(t));
         return new Promise(res => tx.oncomplete = () => res());
       }
 
       async getMonthMeta(monthKey) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('monthMeta', 'readonly');
+          const tx = db.transaction('monthMeta', 'readonly');
           const req = tx.objectStore('monthMeta').get(monthKey);
           req.onsuccess = () => res(req.result || { monthKey, goalHalere: 0, isClosed: false });
           req.onerror = () => rej(req.error);
@@ -744,8 +777,9 @@
       async setMonthGoal(monthKey, goalHalere) {
         const meta = await this.getMonthMeta(monthKey);
         meta.goalHalere = Math.round(Number(goalHalere) || 0);
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('monthMeta', 'readwrite');
+          const tx = db.transaction('monthMeta', 'readwrite');
           const req = tx.objectStore('monthMeta').put(meta);
           req.onsuccess = () => res(meta);
           req.onerror = () => rej(req.error);
@@ -755,8 +789,9 @@
       async setMonthStatus(monthKey, isClosed) {
         const meta = await this.getMonthMeta(monthKey);
         meta.isClosed = Boolean(isClosed);
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('monthMeta', 'readwrite');
+          const tx = db.transaction('monthMeta', 'readwrite');
           const req = tx.objectStore('monthMeta').put(meta);
           req.onsuccess = () => res(meta);
           req.onerror = () => rej(req.error);
@@ -764,8 +799,9 @@
       }
 
       async getDayConfig(dateStr) {
+        const db = await this.getDb();
         return new Promise((res) => {
-          const tx = this.db.transaction('daysConfig', 'readonly');
+          const tx = db.transaction('daysConfig', 'readonly');
           const req = tx.objectStore('daysConfig').get(dateStr);
           req.onsuccess = () => res(req.result || null);
           req.onerror = () => res(null);
@@ -773,8 +809,9 @@
       }
 
       async getAllDaysConfig(monthKey) {
+        const db = await this.getDb();
         return new Promise((res) => {
-          const tx = this.db.transaction('daysConfig', 'readonly');
+          const tx = db.transaction('daysConfig', 'readonly');
           const req = tx.objectStore('daysConfig').index('monthKey').getAll(IDBKeyRange.only(monthKey));
           req.onsuccess = () => {
             const map = {};
@@ -786,8 +823,9 @@
       }
 
       async saveDayConfig(dayConfig) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('daysConfig', 'readwrite');
+          const tx = db.transaction('daysConfig', 'readwrite');
           const req = tx.objectStore('daysConfig').put(dayConfig);
           req.onsuccess = () => res(dayConfig);
           req.onerror = () => rej(req.error);
@@ -795,8 +833,9 @@
       }
 
       async removeDayConfig(dateStr) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('daysConfig', 'readwrite');
+          const tx = db.transaction('daysConfig', 'readwrite');
           const req = tx.objectStore('daysConfig').delete(dateStr);
           req.onsuccess = () => res();
           req.onerror = () => rej(req.error);
@@ -804,8 +843,9 @@
       }
 
       async getSetting(key, defVal = null) {
+        const db = await this.getDb();
         return new Promise(res => {
-          const tx = this.db.transaction('settings', 'readonly');
+          const tx = db.transaction('settings', 'readonly');
           const req = tx.objectStore('settings').get(key);
           req.onsuccess = () => res(req.result ? req.result.value : defVal);
           req.onerror = () => res(defVal);
@@ -813,8 +853,9 @@
       }
 
       async setSetting(key, value) {
+        const db = await this.getDb();
         return new Promise((res, rej) => {
-          const tx = this.db.transaction('settings', 'readwrite');
+          const tx = db.transaction('settings', 'readwrite');
           const req = tx.objectStore('settings').put({ key, value });
           req.onsuccess = () => res();
           req.onerror = () => rej(req.error);
@@ -824,12 +865,13 @@
       async exportAllData() {
         const entries = await this.getAllEntries();
         const serviceTypes = await this.getAllServiceTypes();
+        const db = await this.getDb();
         const monthMeta = await new Promise((res) => {
-          const tx = this.db.transaction('monthMeta', 'readonly');
+          const tx = db.transaction('monthMeta', 'readonly');
           tx.objectStore('monthMeta').getAll().onsuccess = (e) => res(e.target.result || []);
         });
         const daysConfig = await new Promise((res) => {
-          const tx = this.db.transaction('daysConfig', 'readonly');
+          const tx = db.transaction('daysConfig', 'readonly');
           tx.objectStore('daysConfig').getAll().onsuccess = (e) => res(e.target.result || []);
         });
 
@@ -900,8 +942,10 @@
           normalizedTypes = importedJson.data.serviceTypes;
         }
 
+        const db = await this.getDb();
+
         return new Promise((res, rej) => {
-          const tx = this.db.transaction(['entries', 'serviceTypes', 'monthMeta', 'daysConfig'], 'readwrite');
+          const tx = db.transaction(['entries', 'serviceTypes', 'monthMeta', 'daysConfig'], 'readwrite');
           tx.oncomplete = () => res(normalizedEntries.length);
           tx.onerror = () => rej(new Error('Chyba při zápisu do databáze.'));
 
@@ -1160,7 +1204,6 @@
       renderOverviewChart(dayTotals);
     }
 
-    // Vykreslení grafu s detekcí a zobrazením maxima
     function renderOverviewChart(dayTotals) {
       const chart = document.getElementById('overview-chart');
       const badgeMax = document.getElementById('stat-best-day-badge');
@@ -1172,7 +1215,6 @@
       let max = 0;
       let bestDayNum = 0;
 
-      // Hledání nejlepšího dne
       for (let i = 1; i <= days; i++) {
         const dStr = `${currentMonthKey}-${String(i).padStart(2, '0')}`;
         const val = dayTotals[dStr] || 0;
@@ -1182,7 +1224,6 @@
         }
       }
 
-      // Aktualizace štítku maxima
       if (max > 0 && badgeMax) {
         badgeMax.textContent = `Max: ${bestDayNum}. ${m}. (${formatKc(max)})`;
       } else if (badgeMax) {
