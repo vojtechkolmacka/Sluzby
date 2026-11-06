@@ -61,6 +61,24 @@
       gap: 8px;
     }
 
+    .header-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .cloud-badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(88, 166, 255, 0.1);
+      color: var(--accent);
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+
     .month-selector-bar {
       display: flex;
       align-items: center;
@@ -413,7 +431,10 @@
     <div class="brand-title">
       <span>⚡</span> Koloběžníkovy služby
     </div>
-    <span id="month-status-badge" class="badge open">Otevřeno</span>
+    <div class="header-badges">
+      <span id="cloud-status-badge" class="cloud-badge">☁️ Sync</span>
+      <span id="month-status-badge" class="badge open">Otevřeno</span>
+    </div>
   </header>
 
   <div class="month-selector-bar">
@@ -541,14 +562,37 @@
 
     <!-- NASTAVENÍ A ZÁLOHY -->
     <section id="view-settings" class="view-section hidden">
+      <!-- NOVÁ KARTA PRO CLOUD ZRCADLENÍ DO GISTU -->
+      <div class="card" style="border-color: rgba(88, 166, 255, 0.4);">
+        <div class="card-title" style="color: var(--accent);">☁️ Automatické zrcadlení do cloudu (GitHub Gist)</div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">
+          Při každém uložení se data automaticky zazrcadlí do vašeho tajného Gistu.
+        </p>
+
+        <div class="form-group">
+          <label for="gist-token-input">GitHub Token (Classic s oprávněním 'gist')</label>
+          <input type="password" id="gist-token-input" placeholder="ghp_...">
+        </div>
+
+        <div class="form-group">
+          <label for="gist-id-input">ID Gistu (vytvoří se samo nebo zadejte existující)</label>
+          <input type="text" id="gist-id-input" placeholder="Automaticky po prvním uložení" readonly style="opacity: 0.7;">
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button id="btn-save-gist-token" class="btn btn-secondary btn-sm" style="flex:1;">Uložit a otestovat</button>
+          <button id="btn-pull-gist" class="btn btn-secondary btn-sm" style="flex:1;">Stáhnout z cloudu</button>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-title">Záloha a obnova dat</div>
+        <div class="card-title">Místní záloha a obnova souboru</div>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
-          Veškerá data jsou bezpečně uložena v tomto prohlížeči.
+          Manuální stažení zálohy do souboru v telefonu.
         </p>
         <button id="btn-export-json" class="btn btn-secondary" style="margin-bottom:8px;">Stáhnout zálohu (JSON)</button>
         <button id="btn-export-csv" class="btn btn-secondary" style="margin-bottom:8px;">Exportovat pro Excel (CSV)</button>
-        <button id="btn-import-json" class="btn btn-secondary">Obnovit data ze zálohy</button>
+        <button id="btn-import-json" class="btn btn-secondary">Obnovit data ze souboru</button>
         <input type="file" id="file-import-input" accept=".json,application/json,text/plain" class="hidden">
       </div>
 
@@ -995,6 +1039,105 @@
 
     const storage = new StorageService();
 
+    // --- CLOUD SYNCHRONIZACE DO GISTU ---
+    class GistSyncService {
+      static async getToken() {
+        return await storage.getSetting('gist_token', '');
+      }
+      static async getGistId() {
+        return await storage.getSetting('gist_id', '');
+      }
+
+      static async push() {
+        const token = await this.getToken();
+        if (!token) return;
+
+        const badge = document.getElementById('cloud-status-badge');
+        if (badge) {
+          badge.style.display = 'inline-flex';
+          badge.textContent = '🔄 Ukládám...';
+          badge.style.color = 'var(--accent-gold)';
+        }
+
+        try {
+          const exportData = await storage.exportAllData();
+          const jsonContent = JSON.stringify(exportData, null, 2);
+          const gistId = await this.getGistId();
+
+          const payload = {
+            description: "Záloha aplikace Koloběžníkovy služby",
+            public: false,
+            files: {
+              "kolobeznik-sluzby-data.json": { content: jsonContent }
+            }
+          };
+
+          let res;
+          if (gistId) {
+            // Aktualizace existujícího Gistu
+            res = await fetch(`https://api.github.com/gists/${gistId}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json'
+              },
+              body: JSON.stringify(payload)
+            });
+          } else {
+            // Vytvoření nového tajného Gistu
+            res = await fetch('https://api.github.com/gists', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json'
+              },
+              body: JSON.stringify(payload)
+            });
+          }
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const resData = await res.json();
+          if (resData.id && resData.id !== gistId) {
+            await storage.setSetting('gist_id', resData.id);
+            const idInput = document.getElementById('gist-id-input');
+            if (idInput) idInput.value = resData.id;
+          }
+
+          if (badge) {
+            badge.textContent = '☁️ Uloženo';
+            badge.style.color = 'var(--accent-best)';
+          }
+        } catch (err) {
+          console.warn('Gist auto-sync error:', err);
+          if (badge) {
+            badge.textContent = '⚠️ Chyba cloudu';
+            badge.style.color = 'var(--danger)';
+          }
+        }
+      }
+
+      static async pull() {
+        const token = await this.getToken();
+        const gistId = await this.getGistId();
+        if (!token || !gistId) throw new Error('Chybí token nebo ID Gistu.');
+
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json'
+          }
+        });
+
+        if (!res.ok) throw new Error('Gist nebyl nalezen.');
+        const data = await res.json();
+        const file = data.files['kolobeznik-sluzby-data.json'];
+        if (!file || !file.content) throw new Error('V Gistu chybí soubor kolobeznik-sluzby-data.json.');
+
+        const json = JSON.parse(file.content);
+        return await storage.importData(json, 'merge');
+      }
+    }
+
     let currentMonthKey = '';
     let cachedTypes = [];
     let isSaving = false;
@@ -1024,6 +1167,21 @@
       const today = getTodayString();
       currentMonthKey = today.substring(0, 7);
       document.getElementById('entry-date').value = today;
+
+      // Zobrazení cloud tokenu v nastavení
+      const t = await GistSyncService.getToken();
+      const gId = await GistSyncService.getGistId();
+      if (document.getElementById('gist-token-input')) document.getElementById('gist-token-input').value = t;
+      if (document.getElementById('gist-id-input')) document.getElementById('gist-id-input').value = gId;
+
+      if (t) {
+        const badge = document.getElementById('cloud-status-badge');
+        if (badge) {
+          badge.style.display = 'inline-flex';
+          badge.textContent = '☁️ Připojeno';
+          badge.style.color = 'var(--accent-best)';
+        }
+      }
 
       setupEventListeners();
       await refreshTypesDropdown();
@@ -1062,6 +1220,26 @@
       document.getElementById('form-add-entry').addEventListener('submit', handleEntrySubmit);
       document.getElementById('btn-set-goal').addEventListener('click', promptSetGoal);
       document.getElementById('btn-toggle-close').addEventListener('click', toggleMonthClosed);
+
+      // Cloud synchronizace tlačítka
+      document.getElementById('btn-save-gist-token').addEventListener('click', async () => {
+        const tokenVal = document.getElementById('gist-token-input').value.trim();
+        await storage.setSetting('gist_token', tokenVal);
+        showToast('Ukládám do Gistu...');
+        await GistSyncService.push();
+        alert('Cloudové zrcadlení je připraveno! Data se budou automaticky synchronizovat.');
+      });
+
+      document.getElementById('btn-pull-gist').addEventListener('click', async () => {
+        try {
+          if (!confirm('Stáhnout a sloučit data z vašeho Gistu?')) return;
+          const count = await GistSyncService.pull();
+          await renderCurrentView();
+          alert(`Z cloudu bylo staženo ${count} záznamů!`);
+        } catch (err) {
+          alert('Chyba při stahování z cloudu: ' + err.message);
+        }
+      });
 
       document.getElementById('btn-export-json').addEventListener('click', exportJson);
       document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
@@ -1338,11 +1516,13 @@
       else {
         await storage.removeDayConfig(dStr);
         await renderCurrentView();
+        GistSyncService.push();
         showToast('Obnovena výchozí hodnota');
         return;
       }
       await storage.saveDayConfig({ date: dStr, monthKey: dStr.substring(0, 7), workWeight: weight });
       await renderCurrentView();
+      GistSyncService.push();
       showToast(`Den upraven (${weight} prac. dne)`);
     };
 
@@ -1392,6 +1572,9 @@
           showToast('Služba uložena');
         }
 
+        // Automatické zrcadlení do cloudu na pozadí
+        GistSyncService.push();
+
         document.getElementById('edit-entry-id').value = '';
         document.getElementById('entry-amount').value = '';
         document.getElementById('entry-note').value = '';
@@ -1432,6 +1615,7 @@
     window.confirmDeleteEntry = async function(id) {
       if (confirm('Smazat tento záznam?')) {
         await storage.deleteEntry(id);
+        GistSyncService.push();
         showToast('Záznam smazán');
         await renderCurrentView();
       }
@@ -1511,6 +1695,7 @@
       await storage.saveServiceType(t);
       await refreshTypesDropdown();
       await renderSettings();
+      GistSyncService.push();
       showToast('Stav upraven');
     };
 
@@ -1519,6 +1704,7 @@
         await storage.restoreDefaultServiceTypes();
         await refreshTypesDropdown();
         await renderSettings();
+        GistSyncService.push();
         showToast('Obnoveno');
       }
     });
@@ -1530,6 +1716,7 @@
         const kc = parseFloat(val);
         if (!isNaN(kc) && kc >= 0) {
           await storage.setMonthGoal(currentMonthKey, Math.round(kc * 100));
+          GistSyncService.push();
           showToast('Cíl uložen');
           renderOverview();
         }
@@ -1539,6 +1726,7 @@
     async function toggleMonthClosed() {
       const meta = await storage.getMonthMeta(currentMonthKey);
       await storage.setMonthStatus(currentMonthKey, !meta.isClosed);
+      GistSyncService.push();
       showToast(!meta.isClosed ? 'Měsíc uzavřen' : 'Měsíc otevřen');
       renderOverview();
     }
@@ -1589,7 +1777,8 @@
           const count = await storage.importData(json, 'merge');
           await refreshTypesDropdown();
           await renderCurrentView();
-          alert(`Úspěšně obnoveno ${count} záznamů ze zálohy!`);
+          GistSyncService.push();
+          alert(`Úspěšně obnoveno ${count} záznamů ze souboru!`);
         } catch (err) {
           alert('Chyba při obnově: ' + err.message);
         } finally {
